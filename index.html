@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#123b61" />
+  <title>منظومة رصد الإزالات اليومية - مشروع ضبط النيل</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+  <style>
+    :root { --navy:#123b61; --blue:#176b87; --cyan:#0e8999; --page:#f3f6fa; }
+    * { box-sizing:border-box; }
+    body { font-family:'Cairo',sans-serif; background:var(--page); color:#172b42; }
+    .brand-gradient { background:linear-gradient(135deg,#0d788b 0%,#123b61 100%); }
+    .card { background:#fff; border:1px solid #e7edf3; border-radius:20px; box-shadow:0 8px 24px rgba(15,45,75,.055); }
+    .tab-btn { border-radius:12px; padding:11px 16px; font-weight:800; font-size:13px; color:#52657a; transition:.2s; }
+    .tab-btn.active { color:#fff; background:#176b87; box-shadow:0 5px 14px rgba(23,107,135,.2); }
+    .field { width:100%; border:1px solid #dbe4ed; background:#f8fafc; border-radius:11px; padding:11px 13px; outline:none; font-size:13px; }
+    .field:focus { border-color:#3193a8; box-shadow:0 0 0 3px rgba(49,147,168,.12); background:#fff; }
+    .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; border-radius:11px; padding:10px 15px; font-size:13px; font-weight:800; transition:.18s; }
+    .btn-primary { background:#176b87; color:white; }.btn-primary:hover { background:#11566d; }
+    .btn-indigo { background:#4f46a5; color:#fff; }.btn-indigo:hover { background:#3e378c; }
+    .btn-light { background:#eef3f7; color:#334b62; }.btn-light:hover { background:#e2eaf1; }
+    .btn-danger { background:#fff0f0; color:#bc3434; }.btn-danger:hover { background:#ffe2e2; }
+    .btn-success { background:#e8f8f0; color:#16734a; }.btn-success:hover { background:#d6f2e4; }
+    .muted { color:#718197; }
+    .badge { display:inline-flex; align-items:center; gap:5px; border-radius:999px; padding:4px 9px; font-size:11px; font-weight:800; white-space:nowrap; }
+    .badge-green { color:#14744b; background:#e5f7ee; }.badge-amber { color:#99620a; background:#fff4d9; }.badge-red { color:#aa3131; background:#ffebeb; }.badge-blue { color:#175b89; background:#e8f2fb; }.badge-purple { color:#57449b; background:#f0ecff; }.badge-gray { color:#536273; background:#edf1f5; }
+    .hidden-view { display:none !important; }
+    .table-wrap { overflow:auto; border-radius:15px; }
+    table { width:100%; border-collapse:collapse; min-width:760px; }
+    th { background:#f5f8fb; color:#617286; font-size:11px; font-weight:900; text-align:right; padding:13px 14px; white-space:nowrap; }
+    td { padding:12px 14px; border-top:1px solid #edf1f5; font-size:12px; vertical-align:middle; }
+    tbody tr:hover { background:#fafcfe; }
+    .modal-backdrop { position:fixed; inset:0; z-index:60; background:rgba(7,23,39,.55); display:flex; align-items:center; justify-content:center; padding:16px; overflow:auto; }
+    .modal-panel { background:white; width:min(900px,100%); max-height:92vh; overflow:auto; border-radius:22px; box-shadow:0 25px 80px rgba(0,0,0,.22); }
+    .spinner { width:18px; height:18px; border:3px solid rgba(255,255,255,.45); border-top-color:#fff; border-radius:50%; display:inline-block; animation:spin .7s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .dropzone { border:2px dashed #94c9c4; border-radius:17px; background:#f4fbfa; transition:.2s; }
+    .dropzone.dragover { background:#e6f6f3; border-color:#148b79; }
+    .kpi-number { font-size:27px; line-height:1.2; font-weight:900; color:#153a5b; }
+    .progress-track { height:7px; border-radius:10px; background:#e9eef3; overflow:hidden; }
+    .progress-fill { height:100%; background:#159b79; border-radius:10px; }
+    .mapping-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; }
+    .preview-scroll { max-height:430px; overflow:auto; }
+    @media(max-width:640px) { .tab-btn { flex:1 1 calc(50% - 8px); } .kpi-number { font-size:23px; } }
+  </style>
+</head>
+<body class="min-h-screen">
+
+  <!-- Login -->
+  <section id="loginView" class="min-h-screen flex items-center justify-center p-4 brand-gradient">
+    <div class="bg-white rounded-[26px] p-7 sm:p-9 w-full max-w-md shadow-2xl">
+      <div class="text-center mb-8">
+        <div class="brand-gradient w-20 h-20 rounded-2xl flex items-center justify-center mx-auto text-white text-3xl shadow-lg mb-4"><i class="fa-solid fa-water"></i></div>
+        <h1 class="text-2xl font-black text-slate-900">مشروع ضبط النيل</h1>
+        <p class="text-sm text-slate-500 mt-1">منظومة رصد الإزالات اليومية والمتابعة الميدانية</p>
+      </div>
+      <form id="loginForm" class="space-y-4">
+        <label class="block"><span class="text-xs font-extrabold text-slate-700">البريد الإلكتروني</span><input id="loginEmail" class="field mt-2" type="email" autocomplete="username" required placeholder="name@example.gov.eg" /></label>
+        <label class="block"><span class="text-xs font-extrabold text-slate-700">كلمة المرور</span><input id="loginPassword" class="field mt-2" type="password" autocomplete="current-password" required placeholder="كلمة المرور" /></label>
+        <button id="loginBtn" class="btn btn-primary w-full py-3.5" type="submit"><i class="fa-solid fa-right-to-bracket"></i> تسجيل الدخول</button>
+      </form>
+      <p id="loginError" class="text-sm text-red-600 text-center mt-4 hidden"></p>
+      <div class="border-t mt-7 pt-4 text-center text-[11px] text-slate-400">قطاع تطوير وحماية نهر النيل - وزارة الموارد المائية والري</div>
+    </div>
+  </section>
+
+  <!-- Application -->
+  <div id="appView" class="hidden-view min-h-screen flex flex-col">
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 h-[76px] flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="brand-gradient w-11 h-11 rounded-xl text-white flex items-center justify-center text-xl shrink-0"><i class="fa-solid fa-water"></i></div>
+          <div class="min-w-0"><h1 class="font-black text-slate-900 text-sm sm:text-base truncate">منظومة رصد الإزالات اليومية</h1><p class="text-[10px] sm:text-xs text-slate-500">مشروع ضبط النيل والمتابعة الرقمية</p></div>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="hidden sm:block text-left"><div id="headerUserName" class="font-extrabold text-xs text-slate-800"></div><div id="headerRole" class="text-[10px] text-slate-500 mt-1"></div></div>
+          <button id="logoutBtn" class="btn btn-danger"><i class="fa-solid fa-right-from-bracket"></i><span class="hidden sm:inline">تسجيل الخروج</span></button>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-7xl w-full mx-auto px-4 sm:px-6 py-7 flex-1 space-y-6">
+      <nav class="card p-2 flex flex-wrap gap-2">
+        <button class="tab-btn active" data-tab="dashboard"><i class="fa-solid fa-chart-pie ml-1"></i> لوحة المؤشرات</button>
+        <button class="tab-btn" data-tab="records"><i class="fa-solid fa-table-list ml-1"></i> سجل البيانات</button>
+        <button class="tab-btn" data-tab="excel"><i class="fa-solid fa-file-excel ml-1 text-emerald-600"></i> استيراد وتصدير Excel</button>
+        <button id="usersTabBtn" class="tab-btn hidden-view" data-tab="users"><i class="fa-solid fa-users-gear ml-1"></i> إدارة المستخدمين</button>
+      </nav>
+
+      <!-- Dashboard -->
+      <section id="tab-dashboard" class="tab-panel space-y-6">
+        <div class="flex flex-wrap items-center justify-between gap-2"><div><h2 class="text-xl font-black text-slate-900">لوحة المؤشرات الرئيسية</h2><p class="text-xs muted mt-1">ملخص بيانات الإزالات المعتمدة في المنظومة</p></div><span id="lastUpdated" class="text-[11px] muted"></span></div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          <div class="card p-5 flex items-center gap-4"><div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center text-xl"><i class="fa-solid fa-bullseye"></i></div><div><p class="text-xs muted font-bold">إجمالي المستهدف</p><div id="kpiTargeted" class="kpi-number">0</div></div></div>
+          <div class="card p-5 flex items-center gap-4"><div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center text-xl"><i class="fa-solid fa-circle-check"></i></div><div><p class="text-xs muted font-bold">إجمالي المزالة</p><div id="kpiRemoved" class="kpi-number">0</div></div></div>
+          <div class="card p-5 flex items-center gap-4"><div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center text-xl"><i class="fa-solid fa-clock-rotate-left"></i></div><div><p class="text-xs muted font-bold">إجمالي المتبقية</p><div id="kpiRemaining" class="kpi-number">0</div></div></div>
+          <div class="card p-5 flex items-center gap-4"><div class="w-12 h-12 rounded-xl bg-violet-50 text-violet-700 flex items-center justify-center text-xl"><i class="fa-solid fa-chart-line"></i></div><div><p class="text-xs muted font-bold">نسبة الإنجاز</p><div id="kpiPercentage" class="kpi-number">0%</div></div></div>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <div class="card p-5 lg:col-span-2"><h3 class="font-black text-sm mb-4"><i class="fa-solid fa-chart-column text-blue-600 ml-2"></i>المستهدف والمزالة والمتبقية حسب المحافظة</h3><div class="h-[320px]"><canvas id="barChart"></canvas></div></div>
+          <div class="card p-5"><h3 class="font-black text-sm mb-4"><i class="fa-solid fa-chart-pie text-emerald-600 ml-2"></i>نسب الإنجاز الكلية</h3><div class="h-[260px]"><canvas id="doughnutChart"></canvas></div><p id="chartSummary" class="text-center text-xs muted mt-3"></p></div>
+        </div>
+        <div class="card p-5"><div class="flex items-center justify-between mb-3"><h3 class="font-black text-sm">ملخص أحدث السجلات</h3><button class="text-xs text-cyan-700 font-extrabold" data-goto="records">عرض سجل البيانات</button></div><div class="table-wrap"><table><thead><tr><th>الإدارة</th><th>المحافظة</th><th>المستهدف</th><th>المزالة</th><th>المتبقية</th><th>نسبة الإنجاز</th></tr></thead><tbody id="recentRecordsBody"></tbody></table></div></div>
+      </section>
+
+      <!-- Records -->
+      <section id="tab-records" class="tab-panel hidden-view space-y-5">
+        <div class="flex flex-wrap items-center justify-between gap-3"><div><h2 class="text-xl font-black">سجل الإزالات والبيانات</h2><p class="text-xs muted mt-1">إضافة ومراجعة السجلات وفق صلاحية الحساب</p></div><button id="addRecordBtn" class="btn btn-primary"><i class="fa-solid fa-plus"></i> إضافة بيان جديد</button></div>
+        <div class="card p-4 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between"><input id="recordSearch" class="field sm:max-w-md" placeholder="بحث باسم الإدارة أو المحافظة..." /><div id="recordCount" class="text-xs font-extrabold muted">إجمالي السجلات: 0</div></div>
+        <div class="card p-2"><div class="table-wrap"><table><thead><tr><th>اسم الإدارة</th><th>المحافظة</th><th>المستهدف</th><th>المزالة</th><th>المتبقية</th><th>نسبة الإنجاز</th><th>التاريخ</th><th>الإجراءات</th></tr></thead><tbody id="recordsBody"></tbody></table></div></div>
+      </section>
+
+      <!-- Excel -->
+      <section id="tab-excel" class="tab-panel hidden-view space-y-5">
+        <div><h2 class="text-xl font-black">استيراد وتصدير ملفات Excel</h2><p class="text-xs muted mt-1">رفع ملفات متعددة واستخراج البيانات الأساسية وتوحيدها قبل اعتمادها</p></div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <div class="card p-6">
+            <div class="flex items-center gap-3 mb-3"><div class="w-12 h-12 bg-emerald-50 text-emerald-700 rounded-xl flex items-center justify-center text-2xl"><i class="fa-solid fa-file-excel"></i></div><div><h3 class="font-black">استيراد عدة ملفات في عملية واحدة</h3><p class="text-xs muted">يدعم XLSX وXLS وقراءة أوراق العمل التي تحتوي على بيانات</p></div></div>
+            <label id="dropzone" class="dropzone p-7 flex flex-col items-center text-center cursor-pointer">
+              <i class="fa-solid fa-cloud-arrow-up text-3xl text-emerald-700 mb-3"></i><span class="font-extrabold text-sm">اختاري ملفات Excel أو اسحبيها هنا</span><span class="text-xs muted mt-1">يمكن اختيار أكثر من ملف مرة واحدة</span>
+              <input id="excelFiles" type="file" accept=".xlsx,.xls" multiple class="hidden" />
+            </label>
+            <div id="selectedFiles" class="text-xs muted mt-3"></div>
+            <button id="analyzeFilesBtn" class="btn btn-primary w-full mt-4" disabled><i class="fa-solid fa-magnifying-glass-chart"></i> تحليل الملفات واستخراج البيانات</button>
+            <p class="text-[11px] muted leading-6 mt-3">لن تُحفظ البيانات عند التحليل. يتم أولًا عرض المعاينة والتنبيهات، ثم لا يتم الاستيراد إلا بعد الضغط على «اعتماد واستيراد البيانات».</p>
+          </div>
+          <div class="card p-6 flex flex-col justify-between">
+            <div><div class="w-12 h-12 bg-blue-50 text-blue-700 rounded-xl flex items-center justify-center text-2xl mb-3"><i class="fa-solid fa-file-arrow-down"></i></div><h3 class="font-black">تصدير البيانات المجمعة</h3><p class="text-xs muted mt-2 leading-6">تصدير جميع السجلات المتاحة وفق صلاحية الحساب إلى ملف Excel موحد ومنسق.</p></div>
+            <button id="exportBtn" class="btn btn-primary w-full mt-6"><i class="fa-solid fa-download"></i> تصدير البيانات إلى Excel</button>
+          </div>
+        </div>
+        <div id="importPreview" class="hidden-view space-y-5">
+          <div class="card p-5">
+            <div class="flex flex-wrap justify-between gap-3 items-center mb-4"><div><h3 class="font-black">معاينة البيانات قبل الاعتماد</h3><p class="text-xs muted mt-1">راجعي ربط الأعمدة والسجلات والتنبيهات قبل الحفظ</p></div><button id="clearPreviewBtn" class="btn btn-light"><i class="fa-solid fa-xmark"></i> إلغاء المعاينة</button></div>
+            <div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 gap-3" id="previewStats"></div>
+          </div>
+          <div class="card p-5"><h3 class="font-black text-sm mb-3">مطابقة أعمدة ملفات Excel</h3><p class="text-xs muted mb-4">يتعرف النظام تلقائيًا على العناوين الشائعة. عند عدم التعرف على عمود، اختاري العمود الصحيح يدويًا.</p><div id="mappingPanels" class="space-y-4"></div></div>
+          <div class="card p-5">
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-3"><div><h3 class="font-black text-sm">السجلات المستخرجة والتنبيهات</h3><p class="text-xs muted mt-1">يمكن استبعاد أي سجل قبل الاستيراد</p></div><div class="flex gap-2"><button id="selectAllRowsBtn" class="btn btn-light">تحديد الكل</button><button id="deselectAllRowsBtn" class="btn btn-light">إلغاء التحديد</button></div></div>
+            <div class="preview-scroll table-wrap border border-slate-100"><table><thead><tr><th>استيراد</th><th>الإدارة</th><th>المحافظة</th><th>المستهدف</th><th>المزالة</th><th>المتبقية</th><th>التاريخ</th><th>المصدر</th><th>الحالة</th></tr></thead><tbody id="previewBody"></tbody></table></div>
+            <div class="flex flex-wrap justify-between items-center gap-3 mt-5"><p id="selectedImportCount" class="text-xs font-extrabold muted">السجلات المحددة: 0</p><button id="confirmImportBtn" class="btn btn-success" disabled><i class="fa-solid fa-circle-check"></i> اعتماد واستيراد البيانات</button></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- User management: Super Admin only -->
+      <section id="tab-users" class="tab-panel hidden-view space-y-5">
+        <div class="flex flex-wrap justify-between items-center gap-3"><div><h2 class="text-xl font-black">إدارة مستخدمي المنظومة</h2><p class="text-xs muted mt-1">هذه الصفحة متاحة لحساب Super Admin فقط</p></div><button id="addUserBtn" class="btn btn-indigo"><i class="fa-solid fa-user-plus"></i> إضافة مستخدم جديد</button></div>
+        <div class="card p-2"><div class="table-wrap"><table><thead><tr><th>البريد الإلكتروني</th><th>الاسم / الإدارة</th><th>الصلاحية</th><th>الحالة</th><th>الإجراءات</th></tr></thead><tbody id="usersBody"></tbody></table></div></div>
+      </section>
+    </main>
+    <footer class="bg-white border-t border-slate-200 py-5 text-center text-[11px] muted">جميع الحقوق محفوظة © 2026 - قطاع تطوير وحماية نهر النيل (مشروع ضبط النيل)</footer>
+  </div>
+
+  <!-- General message modal -->
+  <div id="messageModal" class="modal-backdrop hidden-view"><div class="bg-white rounded-2xl p-6 w-full max-w-md text-center"><div id="messageIcon" class="text-3xl mb-3"></div><h3 id="messageTitle" class="font-black text-lg"></h3><p id="messageText" class="text-sm text-slate-600 mt-2 leading-7"></p><button id="messageClose" class="btn btn-primary mt-5 min-w-28">حسنًا</button></div></div>
+
+  <!-- Record modal -->
+  <div id="recordModal" class="modal-backdrop hidden-view"><div class="modal-panel max-w-xl p-6"><div class="flex justify-between items-center mb-5"><h3 id="recordModalTitle" class="font-black text-lg">إضافة بيان</h3><button class="text-slate-400 text-xl" data-close="recordModal">&times;</button></div><form id="recordForm" class="space-y-4">
+    <input id="recordId" type="hidden" />
+    <label class="block"><span class="text-xs font-extrabold">اسم الإدارة</span><input id="recordAdmin" class="field mt-1" required /></label>
+    <label class="block"><span class="text-xs font-extrabold">اسم المحافظة</span><input id="recordGov" class="field mt-1" required /></label>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3"><label><span class="text-xs font-extrabold">المستهدف</span><input id="recordTarget" type="number" min="0" class="field mt-1" required /></label><label><span class="text-xs font-extrabold">المزالة</span><input id="recordRemoved" type="number" min="0" class="field mt-1" required /></label><label><span class="text-xs font-extrabold">المتبقية</span><input id="recordRemaining" type="number" min="0" class="field mt-1" readonly /></label></div>
+    <label class="block"><span class="text-xs font-extrabold">تاريخ التقرير (اختياري)</span><input id="recordDate" type="date" class="field mt-1" /></label>
+    <div class="flex justify-end gap-2 pt-2"><button type="button" class="btn btn-light" data-close="recordModal">إلغاء</button><button id="saveRecordBtn" class="btn btn-primary" type="submit">حفظ البيان</button></div>
+  </form></div></div>
+
+  <!-- User modal -->
+  <div id="userModal" class="modal-backdrop hidden-view"><div class="modal-panel max-w-xl p-6"><div class="flex justify-between items-center mb-5"><h3 id="userModalTitle" class="font-black text-lg">إضافة مستخدم جديد</h3><button class="text-slate-400 text-xl" data-close="userModal">&times;</button></div><form id="userForm" class="space-y-4">
+    <input id="managedUserUid" type="hidden" />
+    <label class="block"><span class="text-xs font-extrabold">البريد الإلكتروني</span><input id="managedUserEmail" type="email" class="field mt-1" required /></label>
+    <label class="block"><span class="text-xs font-extrabold">الاسم / الإدارة</span><input id="managedUserName" class="field mt-1" required /></label>
+    <label class="block"><span class="text-xs font-extrabold">نوع الحساب</span><select id="managedUserRole" class="field mt-1"><option value="user">مستخدم عادي (User)</option><option value="admin">مسؤول (Admin)</option></select></label>
+    <p id="userInviteNote" class="text-xs text-slate-500 leading-6 bg-blue-50 p-3 rounded-xl">سيُنشأ الحساب من خلال الخادم، ولن يتم إدخال كلمة مرور أو تخزينها في هذه الصفحة. يجب أن تكون خدمة إرسال دعوة إنشاء كلمة المرور مهيأة على الخادم.</p>
+    <div class="flex justify-end gap-2 pt-2"><button type="button" class="btn btn-light" data-close="userModal">إلغاء</button><button id="saveUserBtn" class="btn btn-indigo" type="submit">إنشاء الحساب وإرسال الدعوة</button></div>
+  </form></div></div>
+
+  <div id="busyOverlay" class="modal-backdrop hidden-view"><div class="bg-white rounded-2xl p-6 flex items-center gap-3 shadow-xl"><span class="spinner" style="border-color:#b8c8d5;border-top-color:#176b87"></span><span id="busyText" class="font-extrabold text-sm">جارٍ التنفيذ...</span></div></div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, getIdTokenResult } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, collection, doc, getDoc, onSnapshot, addDoc, updateDoc, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
+
+    // Firebase web configuration is an application identifier, not an authorization mechanism.
+    // Keep all privileged operations in trusted Cloud Functions and enforce access in Firestore Rules.
+    const firebaseConfig = {
+      apiKey: "AIzaSyCNdpNcYMOsa8zCO1_4GLJCOGzvmiLBo_U",
+      authDomain: "data-bd42d.firebaseapp.com",
+      projectId: "data-bd42d",
+      storageBucket: "data-bd42d.firebasestorage.app",
+      messagingSenderId: "835572192",
+      appId: "1:835572192:web:d0bc8c6346a17871419b85",
+      measurementId: "G-ZHLRJGG1BC"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    // Uses the default Cloud Functions region (us-central1). Change this only if your deployed functions use another region.
+    const functions = getFunctions(app);
+    const appId = typeof __app_id !== "undefined" ? __app_id : "nile-removal-project-default";
+    const root = `artifacts/${appId}/public/data`;
+    const recordsRef = collection(db, `${root}/records`);
+    const usersRef = collection(db, `${root}/user_profiles`);
+
+    const state = {
+      user: null, profile: null, claims: {}, role: "user", isAdmin: false, isSuperAdmin: false,
+      records: [], users: [], charts: { bar: null, doughnut: null }, unsubscribeRecords: [], unsubscribeUsers: null,
+      selectedFiles: [], parsedSheets: [], previewRows: [], importId: null, busy: false
+    };
+
+    const $ = (id) => document.getElementById(id);
+    const callable = (name) => httpsCallable(functions, name);
+    const show = (id) => $(id).classList.remove("hidden-view");
+    const hide = (id) => $(id).classList.add("hidden-view");
+    const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+    const fmt = (value) => (Number(value) || 0).toLocaleString("en-US");
+
+    function setBusy(on, text = "جارٍ التنفيذ...") {
+      state.busy = on;
+      $("busyText").textContent = text;
+      on ? show("busyOverlay") : hide("busyOverlay");
+      ["loginBtn","analyzeFilesBtn","confirmImportBtn","saveRecordBtn","saveUserBtn"].forEach(id => { const el = $(id); if (el) el.disabled = on; });
+    }
+    function message(title, text, kind = "info") {
+      $("messageTitle").textContent = title;
+      $("messageText").textContent = text;
+      $("messageIcon").innerHTML = kind === "success" ? '<i class="fa-solid fa-circle-check text-emerald-600"></i>' : kind === "error" ? '<i class="fa-solid fa-circle-exclamation text-red-600"></i>' : '<i class="fa-solid fa-circle-info text-blue-600"></i>';
+      show("messageModal");
+    }
+    $("messageClose").addEventListener("click", () => hide("messageModal"));
+    document.querySelectorAll("[data-close]").forEach(btn => btn.addEventListener("click", () => hide(btn.dataset.close)));
+
+    function notifyError(error, context = "تعذر إتمام العملية") {
+      console.error(context, error);
+      const code = error?.code || "";
+      const text = code.includes("permission-denied") ? "ليست لديك الصلاحية اللازمة لتنفيذ هذه العملية." : code.includes("functions/not-found") ? "وظيفة الخادم المطلوبة غير منشورة أو اسمها غير مطابق. راجعي نشر Cloud Functions." : (error?.message || "حدث خطأ غير متوقع. راجعي إعدادات الاتصال بالخدمة.");
+      message("تعذر التنفيذ", text, "error");
+    }
+
+    // ---------- Authentication and role resolution ----------
+    $("loginForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      $("loginError").classList.add("hidden-view");
+      setBusy(true, "جارٍ تسجيل الدخول...");
+      try {
+        // No automatic account creation. Accounts are provisioned only by the trusted Super Admin flow.
+        await signInWithEmailAndPassword(auth, $("loginEmail").value.trim(), $("loginPassword").value);
+      } catch (error) {
+        $("loginError").textContent = error.code === "auth/user-disabled" ? "هذا الحساب موقوف ولا يسمح له بتسجيل الدخول." : "تعذر تسجيل الدخول. تحققي من البريد الإلكتروني وكلمة المرور.";
+        $("loginError").classList.remove("hidden-view");
+      } finally { setBusy(false); }
+    });
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        stopListeners(); state.user = null; state.profile = null; state.claims = {}; state.role = "user"; state.isAdmin = false; state.isSuperAdmin = false;
+        hide("appView"); show("loginView"); return;
+      }
+      setBusy(true, "جارٍ التحقق من الصلاحيات...");
+      try {
+        state.user = user;
+        const token = await getIdTokenResult(user, true);
+        state.claims = token.claims || {};
+        state.isSuperAdmin = state.claims.superAdmin === true;
+        state.isAdmin = state.isSuperAdmin || state.claims.admin === true;
+        state.role = state.isSuperAdmin ? "superAdmin" : state.isAdmin ? "admin" : "user";
+
+        const profileSnap = await getDoc(doc(db, `${root}/user_profiles/${user.uid}`));
+        if (!profileSnap.exists()) throw new Error("لا يوجد ملف مستخدم معتمد لهذا الحساب. يرجى مراجعة مسؤول المنظومة.");
+        state.profile = profileSnap.data();
+        if (state.profile.disabled === true) throw new Error("هذا الحساب موقوف. يرجى التواصل مع مسؤول المنظومة.");
+
+        // Super Admin status comes only from a server-issued custom claim, never from an email substring.
+        if (state.isSuperAdmin && state.profile.role !== "superAdmin") console.warn("Profile role differs from trusted superAdmin claim; claims remain authoritative.");
+        $("headerUserName").textContent = state.profile.name || user.email || "مستخدم";
+        $("headerRole").textContent = state.isSuperAdmin ? "Super Admin - الأدمن الرئيسي" : state.isAdmin ? "Admin - مسؤول النظام" : "User - مستخدم عادي";
+        state.isSuperAdmin ? show("usersTabBtn") : hide("usersTabBtn");
+        hide("loginView"); show("appView");
+        startListeners(); switchTab("dashboard");
+      } catch (error) {
+        console.error(error);
+        await signOut(auth);
+        $("loginError").textContent = error.message || "لا توجد صلاحية للدخول إلى المنظومة.";
+        $("loginError").classList.remove("hidden-view");
+      } finally { setBusy(false); }
+    });
+
+    $("logoutBtn").addEventListener("click", async () => { setBusy(true, "جارٍ تسجيل الخروج..."); try { await signOut(auth); } finally { setBusy(false); } });
+
+    function stopListeners() {
+      (state.unsubscribeRecords || []).forEach(unsubscribe => { try { unsubscribe(); } catch (_) {} });
+      if (state.unsubscribeUsers) state.unsubscribeUsers();
+      state.unsubscribeRecords = []; state.unsubscribeUsers = null;
+    }
+    function startListeners() {
+      stopListeners();
+      if (state.isAdmin) {
+        state.unsubscribeRecords.push(onSnapshot(recordsRef, snap => {
+          state.records = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+          renderDashboard(); renderRecords();
+        }, error => notifyError(error, "تحميل السجلات")));
+      } else {
+        // Firestore Rules are not filters. Query only the current user's records instead of downloading all records
+        // and hiding other departments/owners in the browser. A second query preserves legacy createdBy records.
+        let byUid = [], byEmail = [];
+        const publishOwnRecords = () => {
+          const merged = new Map();
+          [...byUid, ...byEmail].forEach(r => merged.set(r.id, r));
+          state.records = [...merged.values()]; renderDashboard(); renderRecords();
+        };
+        state.unsubscribeRecords.push(onSnapshot(query(recordsRef, where("userId", "==", state.user.uid)), snap => {
+          byUid = snap.docs.map(d => ({ id: d.id, ...d.data() })); publishOwnRecords();
+        }, error => notifyError(error, "تحميل سجلات المستخدم")));
+        if (state.user.email) {
+          state.unsubscribeRecords.push(onSnapshot(query(recordsRef, where("createdBy", "==", state.user.email)), snap => {
+            byEmail = snap.docs.map(d => ({ id: d.id, ...d.data() })); publishOwnRecords();
+          }, error => notifyError(error, "تحميل السجلات القديمة للمستخدم")));
+        }
+      }
+      if (state.isSuperAdmin) {
+        state.unsubscribeUsers = onSnapshot(usersRef, snap => {
+          state.users = snap.docs.map(d => ({ uid: d.id, ...d.data() })); renderUsers();
+        }, error => notifyError(error, "تحميل المستخدمين"));
+      }
+    }
+
+    // ---------- Navigation ----------
+    function switchTab(tab) {
+      if (tab === "users" && !state.isSuperAdmin) return;
+      document.querySelectorAll(".tab-panel").forEach(el => hide(el.id));
+      show(`tab-${tab}`);
+      document.querySelectorAll(".tab-btn[data-tab]").forEach(el => el.classList.toggle("active", el.dataset.tab === tab));
+    }
+    document.querySelectorAll(".tab-btn[data-tab]").forEach(btn => btn.addEventListener("click", () => switchTab(btn.dataset.tab)));
+    document.querySelectorAll("[data-goto]").forEach(btn => btn.addEventListener("click", () => switchTab(btn.dataset.goto)));
+
+    function visibleRecords() {
+      if (state.isAdmin) return state.records;
+      // Preserve the current application's existing regular-user scope: records created by this account only.
+      return state.records.filter(r => r.userId === state.user?.uid || r.createdBy === state.user?.email);
+    }
+
+    // ---------- Dashboard ----------
+    function renderDashboard() {
+      const rows = visibleRecords();
+      const totalTargeted = rows.reduce((s,r) => s + (Number(r.targeted) || 0), 0);
+      const totalRemoved = rows.reduce((s,r) => s + (Number(r.removed) || 0), 0);
+      const totalRemaining = rows.reduce((s,r) => s + (Number(r.remaining) || 0), 0);
+      const pct = totalTargeted > 0 ? Math.round(totalRemoved / totalTargeted * 100) : 0;
+      $("kpiTargeted").textContent = fmt(totalTargeted); $("kpiRemoved").textContent = fmt(totalRemoved); $("kpiRemaining").textContent = fmt(totalRemaining); $("kpiPercentage").textContent = `${pct}%`;
+      $("lastUpdated").textContent = `عدد السجلات: ${fmt(rows.length)}`;
+      $("chartSummary").textContent = `نسبة الإنجاز ${pct}% من إجمالي المستهدف`;
+      renderCharts(rows);
+      const recent = [...rows].sort((a,b) => String(b.createdAt || b.updatedAt || "").localeCompare(String(a.createdAt || a.updatedAt || ""))).slice(0,7);
+      $("recentRecordsBody").innerHTML = recent.length ? recent.map(r => recordCells(r, false)).join("") : '<tr><td colspan="6" class="text-center muted py-8">لا توجد بيانات مسجلة</td></tr>';
+    }
+    function renderCharts(rows) {
+      const map = new Map();
+      rows.forEach(r => { const key = r.govName || "غير محدد"; if (!map.has(key)) map.set(key,{targeted:0,removed:0,remaining:0}); const v=map.get(key); v.targeted += Number(r.targeted)||0; v.removed += Number(r.removed)||0; v.remaining += Number(r.remaining)||0; });
+      const labels=[...map.keys()], vals=[...map.values()];
+      if (state.charts.bar) state.charts.bar.destroy();
+      state.charts.bar = new Chart($("barChart"), {type:"bar",data:{labels:labels.length?labels:["لا توجد بيانات"],datasets:[{label:"المستهدف",data:vals.length?vals.map(v=>v.targeted):[0],backgroundColor:"#3977b8",borderRadius:6},{label:"المزالة",data:vals.length?vals.map(v=>v.removed):[0],backgroundColor:"#159b79",borderRadius:6},{label:"المتبقية",data:vals.length?vals.map(v=>v.remaining):[0],backgroundColor:"#e5a33d",borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{font:{family:"Cairo"}}}},scales:{x:{ticks:{font:{family:"Cairo"}}},y:{beginAtZero:true,ticks:{font:{family:"Cairo"}}}}}});
+      if (state.charts.doughnut) state.charts.doughnut.destroy();
+      state.charts.doughnut = new Chart($("doughnutChart"), {type:"doughnut",data:{labels:["المزالة","المتبقية"],datasets:[{data:totalSafe(vals),backgroundColor:["#159b79","#e5a33d"],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:"72%",plugins:{legend:{position:"bottom",labels:{font:{family:"Cairo"}}}}}});
+    }
+    function totalSafe(vals) { const removed=vals.reduce((s,v)=>s+v.removed,0), remaining=vals.reduce((s,v)=>s+v.remaining,0); return removed+remaining ? [removed,remaining] : [1,1]; }
+
+    // ---------- Record management ----------
+    function recordCells(r, withActions = true) {
+      const target=Number(r.targeted)||0, removed=Number(r.removed)||0, remaining=Number(r.remaining)||0, pct=target>0?Math.round(removed/target*100):0;
+      const date = r.reportDate ? escapeHtml(r.reportDate) : "—";
+      let actions="";
+      if (withActions) {
+        const canEdit = state.isAdmin || r.userId === state.user?.uid || r.createdBy === state.user?.email;
+        actions = canEdit ? `<button class="btn btn-light !p-2" data-edit-record="${escapeHtml(r.id)}" title="تعديل"><i class="fa-solid fa-pen"></i></button> <button class="btn btn-danger !p-2" data-delete-record="${escapeHtml(r.id)}" title="حذف"><i class="fa-solid fa-trash"></i></button>` : "—";
+      }
+      return `<tr><td class="font-extrabold">${escapeHtml(r.adminName)}</td><td>${escapeHtml(r.govName)}</td><td>${fmt(target)}</td><td class="text-emerald-700 font-extrabold">${fmt(removed)}</td><td class="text-amber-700 font-extrabold">${fmt(remaining)}</td><td><div class="flex items-center gap-2 min-w-24"><div class="progress-track w-16"><div class="progress-fill" style="width:${Math.min(pct,100)}%"></div></div><b>${pct}%</b></div></td>${withActions?`<td>${date}</td><td>${actions}</td>`:""}</tr>`;
+    }
+    function renderRecords() {
+      const q=$("recordSearch").value.trim().toLocaleLowerCase("ar");
+      const rows=visibleRecords().filter(r => !q || `${r.adminName||""} ${r.govName||""}`.toLocaleLowerCase("ar").includes(q));
+      $("recordCount").textContent=`إجمالي السجلات: ${fmt(rows.length)}`;
+      $("recordsBody").innerHTML=rows.length?rows.map(r=>recordCells(r,true)).join(""):'<tr><td colspan="8" class="text-center muted py-8">لا توجد بيانات مطابقة</td></tr>';
+      document.querySelectorAll("[data-edit-record]").forEach(b=>b.addEventListener("click",()=>openRecord(b.dataset.editRecord)));
+      document.querySelectorAll("[data-delete-record]").forEach(b=>b.addEventListener("click",()=>deleteRecord(b.dataset.deleteRecord)));
+    }
+    $("recordSearch").addEventListener("input",renderRecords);
+    $("addRecordBtn").addEventListener("click",()=>openRecord(null));
+    function openRecord(id) {
+      const r=id?state.records.find(x=>x.id===id):null;
+      if (r && !state.isAdmin && r.userId!==state.user.uid && r.createdBy!==state.user.email) return message("غير مسموح","لا يمكنك تعديل سجل لا يتبع حسابك.","error");
+      $("recordModalTitle").textContent=r?"تعديل بيان إزالة":"إضافة بيان إزالة جديد";
+      $("recordId").value=r?.id||""; $("recordAdmin").value=r?.adminName||""; $("recordGov").value=r?.govName||""; $("recordTarget").value=r?.targeted??""; $("recordRemoved").value=r?.removed??""; $("recordRemaining").value=r?.remaining??""; $("recordDate").value=r?.reportDate||"";
+      show("recordModal"); updateRemaining();
+    }
+    function updateRemaining(){const t=Number($("recordTarget").value)||0,r=Number($("recordRemoved").value)||0; $("recordRemaining").value=Math.max(0,t-r);}
+    ["recordTarget","recordRemoved"].forEach(id=>$(id).addEventListener("input",updateRemaining));
+    $("recordForm").addEventListener("submit",async e=>{
+      e.preventDefault(); if(state.busy)return;
+      const id=$("recordId").value, target=Number($("recordTarget").value), removed=Number($("recordRemoved").value);
+      if(removed>target) return message("مراجعة القيم","قيمة المخالفات المزالة أكبر من إجمالي المستهدف. يرجى مراجعة البيانات.","error");
+      const data={adminName:$("recordAdmin").value.trim(),govName:$("recordGov").value.trim(),targeted:target,removed,remaining:Math.max(0,target-removed),reportDate:$("recordDate").value||null,userId:state.user.uid,createdBy:state.user.email,updatedAt:new Date().toISOString()};
+      setBusy(true,"جارٍ حفظ البيان...");
+      try { if(id){await updateDoc(doc(db,`${root}/records/${id}`),data);}else{await addDoc(recordsRef,{...data,createdAt:new Date().toISOString()});} hide("recordModal"); message("تم الحفظ","تم حفظ البيان بنجاح.","success"); }
+      catch(error){notifyError(error,"حفظ سجل");} finally{setBusy(false);}
+    });
+    async function deleteRecord(id){const r=state.records.find(x=>x.id===id);if(!r)return;if(!state.isAdmin&&r.userId!==state.user.uid&&r.createdBy!==state.user.email)return message("غير مسموح","لا يمكنك حذف سجل لا يتبع حسابك.","error");if(!confirm("هل أنت متأكد من حذف هذا البيان؟ لا يمكن التراجع عن الحذف."))return;setBusy(true,"جارٍ حذف البيان...");try{await deleteDoc(doc(db,`${root}/records/${id}`));message("تم الحذف","تم حذف البيان.","success");}catch(error){notifyError(error,"حذف سجل");}finally{setBusy(false);}}
+
+    // ---------- Excel parsing and normalization ----------
+    const aliases = {
+      adminName:["اسم الادارة","الادارة","الاداره","اسم الجهة","الجهة","اسم الوحدة","القطاع","الادارة العامة","administration","admin name","department","authority"],
+      govName:["اسم المحافظة","المحافظة","المحافظه","محافظة","governorate","governorate name","gov name"],
+      targeted:["اجمالي المستهدف من المخالفات","اجمالي المستهدف","إجمالي المستهدف","المستهدف","عدد المخالفات المستهدفة","المخالفات المستهدفة","targeted","total targeted","target"],
+      removed:["اجمالي المخالفات المزالة","إجمالي المخالفات المزالة","المخالفات المزالة","اجمالي المزالة","المزالة","عدد الازالات","عدد الإزالات","removed","total removed"],
+      remaining:["اجمالي المخالفات المتبقية","إجمالي المخالفات المتبقية","المخالفات المتبقية","اجمالي المتبقي","المتبقية","المتبقي","remaining","total remaining"],
+      reportDate:["تاريخ التقرير","التاريخ","تاريخ البيان","تاريخ الرصد","date","report date","record date"]
+    };
+    const fieldLabels={adminName:"اسم الإدارة",govName:"اسم المحافظة",targeted:"إجمالي المستهدف",removed:"إجمالي المزالة",remaining:"إجمالي المتبقية",reportDate:"تاريخ التقرير"};
+    function normText(v){return String(v??"").toLocaleLowerCase("ar").normalize("NFKC").replace(/[\u064B-\u065F\u0670]/g,"").replace(/[إأآ]/g,"ا").replace(/ى/g,"ي").replace(/[ـ]/g,"").replace(/[\s_\-\/\\:：.,،؛;()]+/g,"").trim();}
+    function toNumber(v){
+      if(v===null||v===undefined||v==="")return null;
+      let s=String(v).trim().replace(/[٠-٩]/g,d=>"٠١٢٣٤٥٦٧٨٩".indexOf(d)).replace(/[۰-۹]/g,d=>"۰۱۲۳۴۵۶۷۸۹".indexOf(d));
+      s=s.replace(/[٬,،]/g,"").replace(/[٫]/g,".").replace(/[^0-9.-]/g,"");
+      if(!s||s==="-"||s===".")return null; const n=Number(s);return Number.isFinite(n)?n:null;
+    }
+    function normalizeDate(v){
+      if(!v)return null;
+      if(v instanceof Date && !isNaN(v))return v.toISOString().slice(0,10);
+      if(typeof v==="number"&&v>20000&&v<80000){const d=XLSX.SSF.parse_date_code(v);if(d)return `${d.y}-${String(d.m).padStart(2,"0")}-${String(d.d).padStart(2,"0")}`;}
+      const s=String(v).trim(); const m=s.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})$/);if(m){let y=Number(m[3]);if(y<100)y+=2000;return `${y}-${String(Number(m[2])).padStart(2,"0")}-${String(Number(m[1])).padStart(2,"0")}`;}
+      const d=new Date(s);return isNaN(d)?s:d.toISOString().slice(0,10);
+    }
+    function detectHeader(matrix){
+      let best={index:-1,score:0,mapping:{}};
+      const fields=["adminName","govName","targeted","removed","remaining","reportDate"];
+      for(let i=0;i<Math.min(matrix.length,30);i++){
+        const row=matrix[i]||[]; const mapping={}; let score=0;
+        row.forEach((cell,idx)=>{const h=normText(cell);if(!h)return;for(const f of fields){if(mapping[f]!==undefined)continue;const found=aliases[f].some(a=>normText(a)===h);if(found){mapping[f]=idx;score++;}}});
+        // Header candidates must contain at least 2 recognizable fields; prefer the one with most matches.
+        if(score>best.score)best={index:i,score,mapping};
+      }
+      return best.score>=2?best:null;
+    }
+    function extractSheetsFromWorkbook(workbook,fileName){
+      const out=[];
+      for(const sheetName of workbook.SheetNames){
+        const ws=workbook.Sheets[sheetName]; const matrix=XLSX.utils.sheet_to_json(ws,{header:1,defval:"",raw:true,blankrows:false});
+        if(!matrix.length)continue;
+        const header=detectHeader(matrix); if(!header)continue;
+        const headers=(matrix[header.index]||[]).map((x,i)=>String(x||`عمود ${i+1}`).trim());
+        out.push({key:`${fileName}::${sheetName}::${out.length}`,fileName,sheetName,headers,matrix,headerIndex:header.index,mapping:{...header.mapping}});
+      }
+      return out;
+    }
+    function parseSheetRows(sheet){
+      const results=[]; const fields=["adminName","govName","targeted","removed","remaining","reportDate"];
+      for(let i=sheet.headerIndex+1;i<sheet.matrix.length;i++){
+        const row=sheet.matrix[i]||[]; if(!row.some(v=>String(v??"").trim()))continue;
+        const get=f=>sheet.mapping[f]!==undefined?row[sheet.mapping[f]]:null;
+        const admin=String(get("adminName")??"").trim(),gov=String(get("govName")??"").trim();
+        const targeted=toNumber(get("targeted")),removed=toNumber(get("removed")),sourceRemaining=toNumber(get("remaining"));
+        const date=normalizeDate(get("reportDate"));
+        const isSummary=/^(اجمالي|الإجمالي|المجموع|total|grandtotal)/i.test(normText(admin+gov));
+        if(isSummary)continue;
+        const issues=[];
+        if(!admin)issues.push("اسم الإدارة غير محدد"); if(!gov)issues.push("اسم المحافظة غير محدد");
+        if(targeted===null)issues.push("المستهدف غير محدد أو غير رقمي"); if(removed===null)issues.push("المزالة غير محددة أو غير رقمية");
+        const t=targeted??0, r=removed??0, calculated=Math.max(0,t-r);
+        let remaining=sourceRemaining===null?calculated:sourceRemaining;
+        if(sourceRemaining!==null&&targeted!==null&&removed!==null&&sourceRemaining!==calculated)issues.push("المتبقي بالمصدر يختلف عن (المستهدف - المزالة)");
+        if(targeted!==null&&removed!==null&&removed>targeted)issues.push("المزالة أكبر من المستهدف");
+        const valid=!!admin&&!!gov&&targeted!==null&&removed!==null;
+        results.push({key:`${sheet.key}::${i}`,adminName:admin,govName:gov,targeted:t,removed:r,remaining,reportDate:date,sourceFile:sheet.fileName,sourceSheet:sheet.sheetName,sourceRow:i+1,issues,valid,selected:valid,duplicateType:null,duplicateWith:[]});
+      }
+      return results;
+    }
+    function renderMappingPanels(){
+      $("mappingPanels").innerHTML=state.parsedSheets.map(sheet=>{
+        const selectors=["adminName","govName","targeted","removed","remaining","reportDate"].map(field=>{
+          const required=["adminName","govName","targeted","removed"].includes(field);
+          const options=`<option value="">${required?"اختاري العمود":"غير محدد (اختياري)"}</option>`+sheet.headers.map((h,i)=>`<option value="${i}" ${sheet.mapping[field]===i?"selected":""}>${escapeHtml(h||`عمود ${i+1}`)}</option>`).join("");
+          return `<label class="block"><span class="text-[11px] font-extrabold">${fieldLabels[field]} ${required?"*":""}</span><select class="field mt-1" data-map-sheet="${escapeHtml(sheet.key)}" data-map-field="${field}">${options}</select></label>`;
+        }).join("");
+        return `<div class="border border-slate-200 rounded-xl p-4"><div class="font-extrabold text-sm mb-1">${escapeHtml(sheet.fileName)} <span class="text-slate-400">/ ${escapeHtml(sheet.sheetName)}</span></div><div class="text-[11px] muted mb-3">صف العناوين المكتشف: ${sheet.headerIndex+1} — ${sheet.headers.length} عمودًا</div><div class="mapping-grid">${selectors}</div></div>`;
+      }).join("");
+      document.querySelectorAll("[data-map-sheet]").forEach(select=>select.addEventListener("change",()=>{
+        const sheet=state.parsedSheets.find(s=>s.key===select.dataset.mapSheet); if(!sheet)return;
+        const val=select.value; if(val==="")delete sheet.mapping[select.dataset.mapField];else sheet.mapping[select.dataset.mapField]=Number(val);
+        rebuildPreviewRows();
+      }));
+    }
+    function fingerprint(r){return [normText(r.adminName),normText(r.govName),Number(r.targeted),Number(r.removed),Number(r.remaining)].join("|");}
+    function classifyDuplicate(row, priorRows){
+      const f=fingerprint(row);
+      for(const old of priorRows){
+        if(fingerprint(old)!==f)continue;
+        const d1=row.reportDate,d2=old.reportDate;
+        if(d1&&d2&&d1===d2)return {type:"confirmed",id:old.id||old.key};
+        if(!d1||!d2)return {type:"possible",id:old.id||old.key};
+      }
+      return null;
+    }
+    function rebuildPreviewRows(){
+      let incoming=state.parsedSheets.flatMap(parseSheetRows);
+      const acceptedSoFar=[];
+      incoming.forEach(row=>{
+        const dup=classifyDuplicate(row,[...visibleRecords(),...acceptedSoFar]);
+        if(dup){row.duplicateType=dup.type;row.duplicateWith=[dup.id];}
+        acceptedSoFar.push(row);
+      });
+      state.previewRows=incoming;
+      renderPreview();
+    }
+    function renderPreview(){
+      const rows=state.previewRows; const valid=rows.filter(r=>r.valid).length, errors=rows.length-valid,confirmed=rows.filter(r=>r.duplicateType==="confirmed").length,possible=rows.filter(r=>r.duplicateType==="possible").length,selected=rows.filter(r=>r.valid&&r.selected).length;
+      $("previewStats").innerHTML=[
+        ["الملفات",state.selectedFiles.length,"bg-blue-50"],["أوراق البيانات",state.parsedSheets.length,"bg-blue-50"],["السجلات المستخرجة",rows.length,"bg-blue-50"],["سجلات سليمة",valid,"bg-emerald-50"],["تحتاج مراجعة",errors,"bg-red-50"],["تكرار مؤكد / محتمل",`${confirmed} / ${possible}`,"bg-amber-50"]
+      ].map(([label,value,tone])=>`<div class="rounded-xl p-3 ${tone}"><div class="text-[10px] font-extrabold text-slate-500">${label}</div><div class="text-xl font-black mt-1 text-slate-800">${value}</div></div>`).join("");
+      $("previewBody").innerHTML=rows.length?rows.map(r=>{
+        const status=!r.valid?`<span class="badge badge-red">بيانات غير مكتملة</span>`:r.duplicateType==="confirmed"?`<span class="badge badge-red">تكرار مؤكد</span>`:r.duplicateType==="possible"?`<span class="badge badge-amber">تشابه محتمل</span>`:r.issues.length?`<span class="badge badge-amber">مراجعة</span>`:`<span class="badge badge-green">سليم</span>`;
+        const notes=[...r.issues];if(r.duplicateType==="confirmed")notes.push("يطابق سجلًا مؤرخًا موجودًا");if(r.duplicateType==="possible")notes.push("بيانات متشابهة دون تاريخ حاسم");
+        return `<tr><td><input type="checkbox" data-preview-check="${escapeHtml(r.key)}" ${r.selected?"checked":""} ${!r.valid?"disabled":""}></td><td class="font-bold">${escapeHtml(r.adminName||"—")}</td><td>${escapeHtml(r.govName||"—")}</td><td>${fmt(r.targeted)}</td><td>${fmt(r.removed)}</td><td>${fmt(r.remaining)}</td><td>${escapeHtml(r.reportDate||"—")}</td><td><div>${escapeHtml(r.sourceFile)}</div><div class="text-[10px] muted">${escapeHtml(r.sourceSheet)} — صف ${r.sourceRow}</div></td><td>${status}<div class="text-[10px] text-slate-500 mt-1">${escapeHtml(notes.join("؛ "))}</div></td></tr>`;
+      }).join(""):'<tr><td colspan="9" class="text-center muted py-8">لم يتم العثور على سجلات قابلة للعرض. تحققي من صف العناوين ومطابقة الأعمدة.</td></tr>';
+      document.querySelectorAll("[data-preview-check]").forEach(ch=>ch.addEventListener("change",()=>{const r=state.previewRows.find(x=>x.key===ch.dataset.previewCheck);if(r)r.selected=ch.checked;updateSelectedCounter();}));
+      updateSelectedCounter();
+    }
+    function updateSelectedCounter(){const count=state.previewRows.filter(r=>r.valid&&r.selected).length;$("selectedImportCount").textContent=`السجلات المحددة للاستيراد: ${count} من ${state.previewRows.length}`;$("confirmImportBtn").disabled=count===0||state.busy;}
+
+    $("excelFiles").addEventListener("change",e=>{state.selectedFiles=[...e.target.files];$("selectedFiles").textContent=state.selectedFiles.length?`تم اختيار ${state.selectedFiles.length} ملفًا: ${state.selectedFiles.map(f=>f.name).join("، ")}`:"";$("analyzeFilesBtn").disabled=!state.selectedFiles.length;});
+    const dropzone=$("dropzone");
+    ["dragenter","dragover"].forEach(ev=>dropzone.addEventListener(ev,e=>{e.preventDefault();dropzone.classList.add("dragover");}));
+    ["dragleave","drop"].forEach(ev=>dropzone.addEventListener(ev,e=>{e.preventDefault();dropzone.classList.remove("dragover");}));
+    dropzone.addEventListener("drop",e=>{state.selectedFiles=[...e.dataTransfer.files].filter(f=>/\.xlsx?$/i.test(f.name));$("selectedFiles").textContent=state.selectedFiles.length?`تم اختيار ${state.selectedFiles.length} ملفًا: ${state.selectedFiles.map(f=>f.name).join("، ")}`:"لم يتم اختيار ملفات Excel صالحة.";$("analyzeFilesBtn").disabled=!state.selectedFiles.length;});
+
+    $("analyzeFilesBtn").addEventListener("click",async()=>{
+      if(!state.selectedFiles.length)return;
+      setBusy(true,"جارٍ قراءة ملفات Excel وتحليل أوراق العمل..."); state.parsedSheets=[];state.previewRows=[];
+      try{
+        for(const file of state.selectedFiles){
+          const buffer=await file.arrayBuffer();const workbook=XLSX.read(buffer,{type:"array",cellDates:true});
+          const sheets=extractSheetsFromWorkbook(workbook,file.name);state.parsedSheets.push(...sheets);
+        }
+        if(!state.parsedSheets.length)throw new Error("لم يتم اكتشاف صفوف عناوين مفهومة. تأكدي من أن الملفات تحتوي على أسماء أعمدة أوضح.");
+        renderMappingPanels();rebuildPreviewRows();show("importPreview");$("importPreview").scrollIntoView({behavior:"smooth",block:"start"});
+      }catch(error){notifyError(error,"تحليل ملفات Excel");}finally{setBusy(false);updateSelectedCounter();}
+    });
+    $("selectAllRowsBtn").addEventListener("click",()=>{state.previewRows.forEach(r=>{if(r.valid)r.selected=true;});renderPreview();});
+    $("deselectAllRowsBtn").addEventListener("click",()=>{state.previewRows.forEach(r=>r.selected=false);renderPreview();});
+    $("clearPreviewBtn").addEventListener("click",()=>{state.parsedSheets=[];state.previewRows=[];state.selectedFiles=[];$("excelFiles").value="";$("selectedFiles").textContent="";$("analyzeFilesBtn").disabled=true;hide("importPreview");});
+
+    $("confirmImportBtn").addEventListener("click",async()=>{
+      const chosen=state.previewRows.filter(r=>r.valid&&r.selected);
+      if(!chosen.length)return;
+      const confirmed=chosen.filter(r=>r.duplicateType==="confirmed").length,possible=chosen.filter(r=>r.duplicateType==="possible").length;
+      const prompt=`سيتم استيراد ${chosen.length} سجلًا جديدًا، من بينها ${confirmed} تكرارًا مؤكدًا و${possible} حالة تشابه محتملة تم اختيارها. سيتم إضافة السجلات المختارة كسجلات مستقلة دون تعديل أو حذف البيانات السابقة. هل تريدين المتابعة؟`;
+      if(!confirm(prompt))return;
+      setBusy(true,"جارٍ حفظ البيانات المعتمدة...");
+      try{
+        const importId=state.importId||crypto.randomUUID();state.importId=importId;
+        const records=chosen.map(r=>({adminName:r.adminName,govName:r.govName,targeted:r.targeted,removed:r.removed,remaining:r.remaining,reportDate:r.reportDate||null,sourceFile:r.sourceFile,sourceSheet:r.sourceSheet,sourceRow:r.sourceRow}));
+        // Server derives uid/email/role from the verified Firebase token; client-supplied ownership is never trusted.
+        const result=await callable("importRecordsBatch")({importId,records});
+        const saved=result.data?.createdCount ?? records.length;
+        message("تم الاستيراد بنجاح",`تمت إضافة ${saved} سجلًا. البيانات السابقة لم يتم استبدالها أو حذفها.`,"success");
+        state.importId=null;$("clearPreviewBtn").click();switchTab("dashboard");
+      }catch(error){notifyError(error,"استيراد البيانات");}finally{setBusy(false);updateSelectedCounter();}
+    });
+
+    // ---------- Export ----------
+    $("exportBtn").addEventListener("click",()=>{
+      const rows=visibleRecords();if(!rows.length)return message("لا توجد بيانات","لا توجد سجلات متاحة للتصدير.");
+      const exportRows=rows.map(r=>({"اسم الإدارة":r.adminName,"اسم المحافظة":r.govName,"إجمالي المستهدف":r.targeted,"إجمالي المخالفات المزالة":r.removed,"إجمالي المخالفات المتبقية":r.remaining,"نسبة الإنجاز":Number(r.targeted)>0?`${Math.round(Number(r.removed)/Number(r.targeted)*100)}%`:"0%","تاريخ التقرير":r.reportDate||"","مصدر الملف":r.sourceFile||""}));
+      const ws=XLSX.utils.json_to_sheet(exportRows);ws["!cols"]=[{wch:28},{wch:20},{wch:18},{wch:22},{wch:22},{wch:16},{wch:16},{wch:30}];
+      const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"تقرير الإزالات المجمع");XLSX.writeFile(wb,`تقرير_ضبط_النيل_${new Date().toISOString().slice(0,10)}.xlsx`);
+    });
+
+    // ---------- Super Admin user administration ----------
+    function renderUsers(){
+      if(!state.isSuperAdmin)return;
+      $("usersBody").innerHTML=state.users.length?state.users.map(u=>{
+        const role=u.role==="admin"?"Admin":u.role==="superAdmin"?"Super Admin":"User";
+        const status=u.disabled?'<span class="badge badge-red">موقوف</span>':'<span class="badge badge-green">نشط</span>';
+        const protectedAccount=u.role==="superAdmin"||u.isSuperAdmin;
+        return `<tr><td class="font-bold">${escapeHtml(u.email)}</td><td>${escapeHtml(u.name||"—")}</td><td><span class="badge ${role==="Admin"?"badge-purple":"badge-blue"}">${role}</span></td><td>${status}</td><td>${protectedAccount?'<span class="text-xs muted">حساب محمي</span>':`<div class="flex gap-1"><button class="btn btn-light !p-2" data-edit-user="${escapeHtml(u.uid)}" title="تعديل"><i class="fa-solid fa-pen"></i></button><button class="btn ${u.disabled?"btn-success":"btn-light"} !p-2" data-toggle-user="${escapeHtml(u.uid)}" title="${u.disabled?"تفعيل":"إيقاف"}"><i class="fa-solid ${u.disabled?"fa-unlock":"fa-ban"}"></i></button><button class="btn btn-danger !p-2" data-delete-user="${escapeHtml(u.uid)}" title="حذف"><i class="fa-solid fa-trash"></i></button></div>`}</td></tr>`;
+      }).join(""):'<tr><td colspan="5" class="text-center muted py-8">لا يوجد مستخدمون</td></tr>';
+      document.querySelectorAll("[data-edit-user]").forEach(b=>b.addEventListener("click",()=>openUser(b.dataset.editUser)));
+      document.querySelectorAll("[data-toggle-user]").forEach(b=>b.addEventListener("click",()=>toggleUser(b.dataset.toggleUser)));
+      document.querySelectorAll("[data-delete-user]").forEach(b=>b.addEventListener("click",()=>deleteUser(b.dataset.deleteUser)));
+    }
+    function openUser(uid){
+      const u=uid?state.users.find(x=>x.uid===uid):null;
+      $("userForm").reset();$("managedUserUid").value=u?.uid||"";$("managedUserEmail").value=u?.email||"";$("managedUserName").value=u?.name||"";$("managedUserRole").value=u?.role==="admin"?"admin":"user";
+      $("managedUserEmail").disabled=false;$("userModalTitle").textContent=u?"تعديل بيانات المستخدم":"إضافة مستخدم جديد";$("saveUserBtn").textContent=u?"حفظ التعديلات":"إنشاء الحساب وإرسال الدعوة";$("userInviteNote").classList.toggle("hidden-view",!!u);show("userModal");
+    }
+    $("addUserBtn").addEventListener("click",()=>openUser(null));
+    $("userForm").addEventListener("submit",async e=>{
+      e.preventDefault();if(!state.isSuperAdmin)return;
+      const uid=$("managedUserUid").value;const payload={email:$("managedUserEmail").value.trim(),name:$("managedUserName").value.trim(),role:$("managedUserRole").value};
+      setBusy(true,uid?"جارٍ تعديل المستخدم...":"جارٍ إنشاء الحساب وإرسال الدعوة...");
+      try{
+        if(uid)await callable("updateManagedUser")({uid,email:payload.email,name:payload.name,role:payload.role});
+        else await callable("createManagedUser")(payload);
+        hide("userModal");message("تم بنجاح",uid?"تم تحديث بيانات المستخدم وصلاحيته.":"تم إنشاء الحساب. تعتمد إتاحة رابط إنشاء كلمة المرور على إعداد خدمة البريد بالخادم.","success");
+      }catch(error){notifyError(error,"إدارة المستخدمين");}finally{setBusy(false);}
+    });
+    async function toggleUser(uid){if(!state.isSuperAdmin)return;const u=state.users.find(x=>x.uid===uid);if(!u)return;const disable=!u.disabled;const msg=disable?"سيتم منع المستخدم من تسجيل الدخول مع الاحتفاظ ببياناته. متابعة؟":"سيتم إعادة تفعيل الحساب. متابعة؟";if(!confirm(msg))return;setBusy(true,disable?"جارٍ إيقاف الحساب...":"جارٍ تفعيل الحساب...");try{await callable("setManagedUserDisabled")({uid,disabled:disable});message("تم تحديث الحساب",disable?"تم إيقاف الحساب وإبطال جلساته من خلال الخادم.":"تمت إعادة تفعيل الحساب.","success");}catch(error){notifyError(error,"تغيير حالة الحساب");}finally{setBusy(false);}}
+    async function deleteUser(uid){if(!state.isSuperAdmin)return;const u=state.users.find(x=>x.uid===uid);if(!u)return;if(!confirm(`سيتم حذف حساب ${u.email} من Authentication وملف المستخدم. ستظل سجلاته التاريخية محفوظة. هل تريدين المتابعة؟`))return;setBusy(true,"جارٍ حذف الحساب...");try{await callable("deleteManagedUser")({uid});message("تم حذف الحساب","تم حذف حساب المستخدم مع الإبقاء على السجلات التاريخية.","success");}catch(error){notifyError(error,"حذف المستخدم");}finally{setBusy(false);}}
+
+    // ---------- Initial UI ----------
+    renderDashboard();renderRecords();
+  </script>
+</body>
+</html>
