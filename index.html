@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منظومة رصد الإزالات اليومية - مشروع ضبط النيل</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Cairo -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- SheetJS (XLSX) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #f1f5f9;
+        }
+        .nile-gradient {
+            background: linear-gradient(135deg, #0e7490 0%, #1e3a8a 100%);
+        }
+        .card-shadow {
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-slate-800 flex flex-col justify-between">
+
+    <!-- Custom Modal for Alerts/Messages -->
+    <div id="customModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm hidden">
+        <div class="bg-white rounded-2xl p-6 max-w-md w-full mx-4 card-shadow border border-slate-100 transform transition-all">
+            <div id="modalIcon" class="w-12 h-12 rounded-full flex items-center justify-center text-xl mb-4 mx-auto"></div>
+            <h3 id="modalTitle" class="text-lg font-bold text-center text-slate-800 mb-2"></h3>
+            <p id="modalMessage" class="text-slate-600 text-center text-sm mb-6"></p>
+            <div class="flex justify-center gap-3">
+                <button id="modalConfirmBtn" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm transition-all shadow-md hidden">تأكيد</button>
+                <button id="modalCloseBtn" class="px-5 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl font-semibold text-sm transition-all">إغلاق</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="fixed inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur-sm hidden">
+        <div class="flex flex-col items-center gap-3">
+            <div class="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            <p id="loadingText" class="text-slate-700 font-semibold text-sm">جاري المعالجة...</p>
+        </div>
+    </div>
+
+    <!-- Auth Wrapper -->
+    <div id="authView" class="flex-grow flex items-center justify-center p-4 bg-gradient-to-br from-cyan-900 via-blue-900 to-indigo-900 min-h-screen">
+        <div class="bg-white/95 backdrop-blur-md rounded-3xl p-8 max-w-md w-full card-shadow border border-white/20">
+            <div class="text-center mb-8">
+                <div class="w-20 h-20 nile-gradient rounded-2xl flex items-center justify-center text-white text-3xl mx-auto shadow-lg mb-4">
+                    <i class="fa-solid fa-water"></i>
+                </div>
+                <h1 class="text-2xl font-black text-slate-900">مشروع ضبط النيل</h1>
+                <p class="text-slate-500 text-sm mt-1">منظومة رصد الإزالات اليومية والمتابعة الميدانية</p>
+            </div>
+
+            <form id="loginForm" class="space-y-5" onsubmit="handleLogin(event)">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">البريد الإلكتروني</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400">
+                            <i class="fa-solid fa-envelope"></i>
+                        </span>
+                        <input type="email" id="loginEmail" required placeholder="name@nile.gov.eg" class="w-full pr-10 pl-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">كلمة المرور</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400">
+                            <i class="fa-solid fa-lock"></i>
+                        </span>
+                        <input type="password" id="loginPassword" required placeholder="••••••••" class="w-full pr-10 pl-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all">
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full py-3.5 nile-gradient text-white rounded-xl font-bold text-sm shadow-lg hover:opacity-95 transition-all flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-right-to-bracket"></i> تسجيل الدخول للنظام
+                </button>
+            </form>
+
+            <div class="mt-6 text-center border-t border-slate-100 pt-4">
+                <p class="text-xs text-slate-400">بواسطة قطاع تطوير وحماية نهر النيل - وزارة الموارد المائية والري</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- App Dashboard View (Hidden by default) -->
+    <div id="appView" class="min-h-screen flex flex-col hidden">
+        <!-- Top Navbar -->
+        <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 nile-gradient rounded-xl flex items-center justify-center text-white text-xl shadow-md">
+                        <i class="fa-solid fa-water"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-black text-slate-900">منظومة رصد الإزالات اليومية</h1>
+                        <p class="text-xs text-slate-500 font-medium">مشروع ضبط النيل والمتابعة الرقمية</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <div class="hidden md:flex flex-col text-left">
+                        <span id="userNameDisplay" class="text-sm font-bold text-slate-800">اسم المستخدم</span>
+                        <span id="userRoleBadge" class="text-xs px-2 py-0.5 rounded-full font-semibold w-fit mt-0.5">الصلاحية</span>
+                    </div>
+                    <button onclick="handleLogout()" class="px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl font-bold text-xs transition-all flex items-center gap-2 border border-rose-200">
+                        <i class="fa-solid fa-right-from-bracket"></i> تسجيل الخروج
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full space-y-8">
+            
+            <!-- Navigation Tabs -->
+            <div class="flex flex-wrap gap-2 bg-white p-2 rounded-2xl card-shadow border border-slate-100">
+                <button onclick="switchTab('dashboard')" id="tabBtn-dashboard" class="flex-1 min-w-[140px] py-3 px-4 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 bg-blue-600 text-white shadow-md">
+                    <i class="fa-solid fa-chart-pie"></i> لوحة المؤشرات
+                </button>
+                <button onclick="switchTab('records')" id="tabBtn-records" class="flex-1 min-w-[140px] py-3 px-4 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 text-slate-600 hover:bg-slate-50">
+                    <i class="fa-solid fa-table-list"></i> سجل الإزالات والبيانات
+                </button>
+                <button onclick="switchTab('excel')" id="tabBtn-excel" class="flex-1 min-w-[140px] py-3 px-4 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 text-slate-600 hover:bg-slate-50">
+                    <i class="fa-solid fa-file-excel text-emerald-600"></i> استيراد وتصدير Excel
+                </button>
+                <button onclick="switchTab('users')" id="tabBtn-users" class="flex-1 min-w-[140px] py-3 px-4 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 text-slate-600 hover:bg-slate-50 hidden">
+                    <i class="fa-solid fa-users-gear text-indigo-600"></i> إدارة المستخدمين (الأدمن)
+                </button>
+            </div>
+
+            <!-- Tab 1: Dashboard & KPIs -->
+            <div id="tabContent-dashboard" class="space-y-8">
+                <!-- KPI Summary Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="bg-white p-6 rounded-3xl card-shadow border border-slate-100 flex items-center gap-4">
+                        <div class="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-2xl font-black">
+                            <i class="fa-solid fa-bullseye"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold text-slate-400 uppercase">إجمالي المستهدف</p>
+                            <h3 id="kpiTargeted" class="text-2xl font-black text-slate-900 mt-1">0</h3>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-3xl card-shadow border border-slate-100 flex items-center gap-4">
+                        <div class="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center text-2xl font-black">
+                            <i class="fa-solid fa-circle-check"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold text-slate-400 uppercase">إجمالي المزالة</p>
+                            <h3 id="kpiRemoved" class="text-2xl font-black text-emerald-600 mt-1">0</h3>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-3xl card-shadow border border-slate-100 flex items-center gap-4">
+                        <div class="w-14 h-14 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center text-2xl font-black">
+                            <i class="fa-solid fa-clock-rotate-left"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold text-slate-400 uppercase">إجمالي المتبقية</p>
+                            <h3 id="kpiRemaining" class="text-2xl font-black text-amber-600 mt-1">0</h3>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-3xl card-shadow border border-slate-100 flex items-center gap-4">
+                        <div class="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center text-2xl font-black">
+                            <i class="fa-solid fa-chart-line"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold text-slate-400 uppercase">نسبة الإنجاز العامة</p>
+                            <h3 id="kpiPercentage" class="text-2xl font-black text-indigo-600 mt-1">0%</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Section -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div class="bg-white p-6 rounded-3xl card-shadow border border-slate-100 lg:col-span-2">
+                        <h3 class="text-base font-black text-slate-800 mb-4 flex items-center gap-2">
+                            <i class="fa-solid fa-chart-column text-blue-600"></i> مقارنة المستهدف والمزالة والمتبقية حسب المحافظات
+                        </h3>
+                        <div class="relative h-80 w-full">
+                            <canvas id="barChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-3xl card-shadow border border-slate-100 flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-base font-black text-slate-800 mb-4 flex items-center gap-2">
+                                <i class="fa-solid fa-chart-pie text-emerald-600"></i> نسب الإنجاز الكلية
+                            </h3>
+                            <div class="relative h-64 w-full flex items-center justify-center">
+                                <canvas id="doughnutChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="mt-4 pt-4 border-t border-slate-100 text-center">
+                            <p id="chartSummaryText" class="text-xs text-slate-500 font-semibold">تحديث مستمر للبيانات الميدانية</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 2: Records & Data Management -->
+            <div id="tabContent-records" class="space-y-6 hidden">
+                <div class="bg-white p-6 rounded-3xl card-shadow border border-slate-100 flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div>
+                        <h3 class="text-lg font-black text-slate-900">سجل بيانات الإزالات اليومية</h3>
+                        <p class="text-xs text-slate-500 mt-0.5">إضافة، تعديل، وحفظ البيانات الخاصة بالإدارات والمحافظات</p>
+                    </div>
+                    <button onclick="openRecordModal()" class="px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-md transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-plus"></i> إضافة بيان جديد
+                    </button>
+                </div>
+
+                <!-- Search and Filter Bar -->
+                <div class="bg-white p-4 rounded-2xl card-shadow border border-slate-100 flex flex-col md:flex-row gap-4 items-center justify-between">
+                    <div class="relative w-full md:w-96">
+                        <span class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400">
+                            <i class="fa-solid fa-search"></i>
+                        </span>
+                        <input type="text" id="searchInput" oninput="filterRecords()" placeholder="بحث باسم الإدارة أو المحافظة..." class="w-full pr-10 pl-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="text-xs font-bold text-slate-500" id="recordCountIndicator">إجمالي السجلات: 0</div>
+                </div>
+
+                <!-- Data Table -->
+                <div class="bg-white rounded-3xl card-shadow border border-slate-100 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs font-black uppercase tracking-wider">
+                                    <th class="py-4 px-6">اسم الإدارة</th>
+                                    <th class="py-4 px-6">اسم المحافظة</th>
+                                    <th class="py-4 px-6">المستهدف</th>
+                                    <th class="py-4 px-6">المزالة</th>
+                                    <th class="py-4 px-6">المتبقية</th>
+                                    <th class="py-4 px-6">نسبة الإنجاز</th>
+                                    <th class="py-4 px-6 text-center">الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recordsTableBody" class="divide-y divide-slate-100 text-sm font-medium text-slate-700">
+                                <!-- Dynamic Rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 3: Excel Import & Export -->
+            <div id="tabContent-excel" class="space-y-6 hidden">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- Import Card -->
+                    <div class="bg-white p-8 rounded-3xl card-shadow border border-slate-100 flex flex-col justify-between">
+                        <div>
+                            <div class="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center text-3xl mb-4">
+                                <i class="fa-solid fa-file-excel"></i>
+                            </div>
+                            <h3 class="text-lg font-black text-slate-900 mb-2">استيراد من ملف Excel</h3>
+                            <p class="text-slate-500 text-sm mb-6">قم برفع شيت الاكسيل الخاص بك (يجب أن يحتوي على الأعمدة: اسم الإدارة، اسم المحافظة، إجمالي المستهدف، إجمالي المخالفات المزالة، إجمالي المخالفات المتبقية).</p>
+                            
+                            <label class="border-2 border-dashed border-emerald-300 bg-emerald-50/50 hover:bg-emerald-50 rounded-2xl p-6 flex flex-col items-center justify-center cursor-pointer transition-all">
+                                <i class="fa-solid fa-cloud-arrow-up text-3xl text-emerald-600 mb-2"></i>
+                                <span class="text-sm font-bold text-slate-700">اختر ملف Excel أو اسحبه هنا</span>
+                                <span class="text-xs text-slate-400 mt-1">(.xlsx, .xls)</span>
+                                <input type="file" id="excelFileInput" accept=".xlsx, .xls" class="hidden" onchange="handleExcelImport(event)">
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Export Card -->
+                    <div class="bg-white p-8 rounded-3xl card-shadow border border-slate-100 flex flex-col justify-between">
+                        <div>
+                            <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-3xl mb-4">
+                                <i class="fa-solid fa-file-arrow-down"></i>
+                            </div>
+                            <h3 class="text-lg font-black text-slate-900 mb-2">تصدير شيت Excel مجمع</h3>
+                            <p class="text-slate-500 text-sm mb-6">تصدير تقرير شامل ومحدث بكل البيانات المدخلة في النظام إلى ملف Excel منسق واحترافي.</p>
+                        </div>
+                        <button onclick="exportToExcel()" class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-sm shadow-lg transition-all flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-download"></i> تصدير البيانات المجمعة الآن
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 4: Admin User Management -->
+            <div id="tabContent-users" class="space-y-6 hidden">
+                <div class="bg-white p-6 rounded-3xl card-shadow border border-slate-100 flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div>
+                        <h3 class="text-lg font-black text-slate-900">إدارة مستخدمي المنظومة</h3>
+                        <p class="text-xs text-slate-500 mt-0.5">صلاحيات الأدمن: إنشاء مستخدمين جدد، منح بيانات الدخول، وإدارة الحسابات</p>
+                    </div>
+                    <button onclick="openUserModal()" class="px-5 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-md transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-user-plus"></i> إضافة مستخدم جديد
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-3xl card-shadow border border-slate-100 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs font-black uppercase tracking-wider">
+                                    <th class="py-4 px-6">البريد الإلكتروني</th>
+                                    <th class="py-4 px-6">اسم الإدارة / المسؤول</th>
+                                    <th class="py-4 px-6">الصلاحية</th>
+                                    <th class="py-4 px-6 text-center">الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersTableBody" class="divide-y divide-slate-100 text-sm font-medium text-slate-700">
+                                <!-- Dynamic Users -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- Footer -->
+        <footer class="bg-white border-t border-slate-200 py-6 mt-12">
+            <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500 font-medium">
+                جميع الحقوق محفوظة &copy; 2026 - قطاع تطوير وحماية نهر النيل (مشروع ضبط النيل)
+            </div>
+        </footer>
+    </div>
+
+    <!-- Record Add/Edit Modal -->
+    <div id="recordModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm hidden">
+        <div class="bg-white rounded-3xl p-8 max-w-lg w-full mx-4 card-shadow border border-slate-100">
+            <h3 id="recordModalTitle" class="text-xl font-black text-slate-900 mb-6">إضافة بيان إزالة جديد</h3>
+            <form id="recordForm" onsubmit="saveRecord(event)" class="space-y-4">
+                <input type="hidden" id="recordId">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5 uppercase">اسم الإدارة</label>
+                    <input type="text" id="adminNameInput" required placeholder="مثال: إدارة حماية نيل قنا" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5 uppercase">اسم المحافظة</label>
+                    <input type="text" id="govNameInput" required placeholder="مثال: قنا" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="grid grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1.5 uppercase">المستهدف</label>
+                        <input type="number" id="targetedInput" min="0" required oninput="calcRemaining()" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1.5 uppercase">المزالة</label>
+                        <input type="number" id="removedInput" min="0" required oninput="calcRemaining()" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1.5 uppercase">المتبقية</label>
+                        <input type="number" id="remainingInput" min="0" readonly class="w-full px-4 py-3 bg-slate-100 border border-slate-200 rounded-xl text-sm text-slate-500 cursor-not-allowed">
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-3 mt-8">
+                    <button type="button" onclick="closeRecordModal()" class="px-5 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-sm transition-all">إلغاء</button>
+                    <button type="submit" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-md transition-all">حفظ البيانات</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- User Add Modal (Admin Only) -->
+    <div id="userModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm hidden">
+        <div class="bg-white rounded-3xl p-8 max-w-lg w-full mx-4 card-shadow border border-slate-100">
+            <h3 class="text-xl font-black text-slate-900 mb-6">إضافة مستخدم جديد للنظام</h3>
+            <form id="userForm" onsubmit="saveNewUser(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5 uppercase">البريد الإلكتروني</label>
+                    <input type="email" id="newUserEmail" required placeholder="user@nile.gov.eg" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5 uppercase">كلمة المرور المؤقتة</label>
+                    <input type="password" id="newUserPassword" required placeholder="••••••••" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5 uppercase">اسم الإدارة / المسؤول</label>
+                    <input type="text" id="newUserName" required placeholder="مثال: إدارة حماية نيل أسيوط" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5 uppercase">الصلاحية</label>
+                    <select id="newUserRole" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="user">مستخدم عادي</option>
+                        <option value="admin">مسؤول النظام (أدمن)</option>
+                    </select>
+                </div>
+
+                <div class="flex justify-end gap-3 mt-8">
+                    <button type="button" onclick="closeUserModal()" class="px-5 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-sm transition-all">إلغاء</button>
+                    <button type="submit" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-md transition-all">إنشاء الحساب</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs & App Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCNdpNcYMOsa8zCO1_4GLJCOGzvmiLBo_U",
+            authDomain: "data-bd42d.firebaseapp.com",
+            projectId: "data-bd42d",
+            storageBucket: "data-bd42d.firebasestorage.app",
+            messagingSenderId: "835572192",
+            appId: "1:835572192:web:d0bc8c6346a17871419b85",
+            measurementId: "G-ZHLRJGG1BC"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'nile-removal-project-default';
+
+        // App State
+        let currentUser = null;
+        let userProfile = null;
+        let allRecords = [];
+        let allUsers = [];
+        let barChartInstance = null;
+        let doughnutChartInstance = null;
+
+        // DOM Elements
+        const authView = document.getElementById('authView');
+        const appView = document.getElementById('appView');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+
+        // Show/Hide Loading
+        function showLoading(text = "جاري المعالجة...") {
+            document.getElementById('loadingText').innerText = text;
+            loadingOverlay.classList.remove('hidden');
+        }
+        function hideLoading() {
+            loadingOverlay.classList.add('hidden');
+        }
+
+        // Custom Modal helper
+        window.showAlert = function(title, message, type = 'success', onConfirm = null) {
+            const modal = document.getElementById('customModal');
+            const icon = document.getElementById('modalIcon');
+            const titleEl = document.getElementById('modalTitle');
+            const msgEl = document.getElementById('modalMessage');
+            const confirmBtn = document.getElementById('modalConfirmBtn');
+            const closeBtn = document.getElementById('modalCloseBtn');
+
+            titleEl.innerText = title;
+            msgEl.innerText = message;
+
+            if (type === 'success') {
+                icon.className = "w-12 h-12 rounded-full flex items-center justify-center text-xl mb-4 mx-auto bg-emerald-100 text-emerald-600";
+                icon.innerHTML = '<i class="fa-solid fa-check"></i>';
+            } else if (type === 'error') {
+                icon.className = "w-12 h-12 rounded-full flex items-center justify-center text-xl mb-4 mx-auto bg-rose-100 text-rose-600";
+                icon.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+            } else {
+                icon.className = "w-12 h-12 rounded-full flex items-center justify-center text-xl mb-4 mx-auto bg-blue-100 text-blue-600";
+                icon.innerHTML = '<i class="fa-solid fa-info"></i>';
+            }
+
+            if (onConfirm) {
+                confirmBtn.classList.remove('hidden');
+                confirmBtn.onclick = () => {
+                    modal.classList.add('hidden');
+                    onConfirm();
+                };
+            } else {
+                confirmBtn.classList.add('hidden');
+            }
+
+            closeBtn.onclick = () => modal.classList.add('hidden');
+            modal.classList.remove('hidden');
+        }
+
+        // Authentication State Listener
+        async function initAuth() {
+            showLoading("جاري الاتصال بالنظام...");
+            
+            // Initial token check
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                }
+            } catch (e) {
+                console.log("Custom token sign in failed, falling back", e);
+            }
+
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    currentUser = user;
+                    await fetchUserProfile(user.uid, user.email);
+                    authView.classList.add('hidden');
+                    appView.classList.remove('hidden');
+                    initListeners();
+                } else {
+                    currentUser = null;
+                    userProfile = null;
+                    appView.classList.add('hidden');
+                    authView.classList.remove('hidden');
+                }
+                hideLoading();
+            });
+        }
+
+        // Fetch User Profile from Firestore
+        async function fetchUserProfile(uid, email) {
+            try {
+                const userDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'user_profiles', uid);
+                const userSnap = await getDoc(userDocRef);
+                
+                if (userSnap.exists()) {
+                    userProfile = userSnap.data();
+                } else {
+                    // Default fallback for first login
+                    const isAdmin = email.includes('admin') || email === 'admin@nile.gov.eg';
+                    userProfile = {
+                        email: email,
+                        name: email.split('@')[0],
+                        role: isAdmin ? 'admin' : 'user'
+                    };
+                    await setDoc(userDocRef, userProfile);
+                }
+
+                updateUIUserHeader();
+            } catch (err) {
+                console.error("Error fetching user profile:", err);
+                userProfile = { email: email, name: email, role: 'user' };
+                updateUIUserHeader();
+            }
+        }
+
+        function updateUIUserHeader() {
+            document.getElementById('userNameDisplay').innerText = userProfile.name || currentUser.email;
+            const badge = document.getElementById('userRoleBadge');
+            const usersTabBtn = document.getElementById('tabBtn-users');
+
+            if (userProfile.role === 'admin') {
+                badge.innerText = "مسؤول النظام (أدمن)";
+                badge.className = "text-xs px-2.5 py-1 rounded-full font-bold bg-indigo-50 text-indigo-600 border border-indigo-200 mt-0.5 w-fit";
+                usersTabBtn.classList.remove('hidden');
+            } else {
+                badge.innerText = "مستخدم عادي";
+                badge.className = "text-xs px-2.5 py-1 rounded-full font-bold bg-emerald-50 text-emerald-600 border border-emerald-200 mt-0.5 w-fit";
+                usersTabBtn.classList.add('hidden');
+            }
+        }
+
+        // Login Handler
+        window.handleLogin = async function(event) {
+            event.preventDefault();
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+
+            showLoading("جاري تسجيل الدخول...");
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+            } catch (error) {
+                console.error("Login error:", error);
+                // If account doesn't exist and it's demo or first time, create it automatically for convenience
+                try {
+                    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                    const isAdmin = email.includes('admin');
+                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'user_profiles', userCredential.user.uid), {
+                        email: email,
+                        name: email.split('@')[0],
+                        role: isAdmin ? 'admin' : 'user'
+                    });
+                } catch (createErr) {
+                    hideLoading();
+                    showAlert("خطأ في تسجيل الدخول", "تأكد من صحة البريد الإلكتروني وكلمة المرور.", "error");
+                }
+            }
+        }
+
+        window.handleLogout = async function() {
+            showLoading("جاري تسجيل الخروج...");
+            await signOut(auth);
+            hideLoading();
+        }
+
+        // Firestore Listeners
+        function initListeners() {
+            // Fetch Records
+            const recordsQuery = collection(db, 'artifacts', appId, 'public', 'data', 'records');
+            onSnapshot(recordsQuery, (snapshot) => {
+                allRecords = [];
+                snapshot.forEach((docSnap) => {
+                    allRecords.push({ id: docSnap.id, ...docSnap.data() });
+                });
+                renderDashboardAndTable();
+            }, (error) => {
+                console.error("Records snapshot error:", error);
+            });
+
+            // Fetch Users (for admin)
+            if (userProfile && userProfile.role === 'admin') {
+                const usersQuery = collection(db, 'artifacts', appId, 'public', 'data', 'user_profiles');
+                onSnapshot(usersQuery, (snapshot) => {
+                    allUsers = [];
+                    snapshot.forEach((docSnap) => {
+                        allUsers.push({ id: docSnap.id, ...docSnap.data() });
+                    });
+                    renderUsersTable();
+                }, (error) => {
+                    console.error("Users snapshot error:", error);
+                });
+            }
+        }
+
+        // Render Dashboard KPIs & Tables
+        function renderDashboardAndTable() {
+            // Filter records based on role (Regular users see only their own records, admin sees all)
+            let visibleRecords = allRecords;
+            if (userProfile && userProfile.role !== 'admin') {
+                visibleRecords = allRecords.filter(r => r.userId === currentUser.uid || r.createdBy === currentUser.email);
+            }
+
+            // Calculate KPIs
+            let totalTargeted = 0;
+            let totalRemoved = 0;
+            let totalRemaining = 0;
+
+            visibleRecords.forEach(r => {
+                totalTargeted += Number(r.targeted) || 0;
+                totalRemoved += Number(r.removed) || 0;
+                totalRemaining += Number(r.remaining) || 0;
+            });
+
+            const overallPct = totalTargeted > 0 ? Math.round((totalRemoved / totalTargeted) * 100) : 0;
+
+            document.getElementById('kpiTargeted').innerText = totalTargeted.toLocaleString();
+            document.getElementById('kpiRemoved').innerText = totalRemoved.toLocaleString();
+            document.getElementById('kpiRemaining').innerText = totalRemaining.toLocaleString();
+            document.getElementById('kpiPercentage').innerText = overallPct + '%';
+
+            renderTable(visibleRecords);
+            updateCharts(visibleRecords);
+        }
+
+        // Render Records Table
+        function renderTable(records) {
+            const tbody = document.getElementById('recordsTableBody');
+            document.getElementById('recordCountIndicator').innerText = `إجمالي السجلات: ${records.length}`;
+
+            if (records.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center py-8 text-slate-400">لا توجد بيانات مسجلة حتى الآن</td></tr>`;
+                return;
+            }
+
+            let html = '';
+            records.forEach(r => {
+                const pct = r.targeted > 0 ? Math.round((r.removed / r.targeted) * 100) : 0;
+                html += `
+                    <tr class="hover:bg-slate-50/80 transition-all border-b border-slate-100">
+                        <td class="py-4 px-6 font-bold text-slate-900">${r.adminName}</td>
+                        <td class="py-4 px-6 text-slate-600">${r.govName}</td>
+                        <td class="py-4 px-6 font-semibold">${Number(r.targeted).toLocaleString()}</td>
+                        <td class="py-4 px-6 font-semibold text-emerald-600">${Number(r.removed).toLocaleString()}</td>
+                        <td class="py-4 px-6 font-semibold text-amber-600">${Number(r.remaining).toLocaleString()}</td>
+                        <td class="py-4 px-6">
+                            <div class="flex items-center gap-2">
+                                <div class="w-full bg-slate-200 rounded-full h-2 w-24 overflow-hidden">
+                                    <div class="bg-blue-600 h-2 rounded-full" style="width: ${Math.min(pct, 100)}%"></div>
+                                </div>
+                                <span class="text-xs font-bold text-slate-700">${pct}%</span>
+                            </div>
+                        </td>
+                        <td class="py-4 px-6 text-center">
+                            <div class="flex items-center justify-center gap-2">
+                                <button onclick="editRecord('${r.id}')" class="p-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-xl transition-all" title="تعديل">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </button>
+                                <button onclick="deleteRecordItem('${r.id}')" class="p-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl transition-all" title="حذف">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
+
+        // Search Filter
+        window.filterRecords = function() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            let visibleRecords = allRecords;
+            if (userProfile && userProfile.role !== 'admin') {
+                visibleRecords = allRecords.filter(r => r.userId === currentUser.uid || r.createdBy === currentUser.email);
+            }
+
+            const filtered = visibleRecords.filter(r => 
+                r.adminName.toLowerCase().includes(query) || r.govName.toLowerCase().includes(query)
+            );
+            renderTable(filtered);
+        }
+
+        // Charts Update
+        function updateCharts(records) {
+            // Aggregate by Governorate
+            const govMap = {};
+            records.forEach(r => {
+                if (!govMap[r.govName]) {
+                    govMap[r.govName] = { targeted: 0, removed: 0, remaining: 0 };
+                }
+                govMap[r.govName].targeted += Number(r.targeted) || 0;
+                govMap[r.govName].removed += Number(r.removed) || 0;
+                govMap[r.govName].remaining += Number(r.remaining) || 0;
+            });
+
+            const labels = Object.keys(govMap);
+            const targetedData = labels.map(l => govMap[l].targeted);
+            const removedData = labels.map(l => govMap[l].removed);
+            const remainingData = labels.map(l => govMap[l].remaining);
+
+            // Bar Chart
+            const barCtx = document.getElementById('barChart').getContext('2d');
+            if (barChartInstance) barChartInstance.destroy();
+
+            barChartInstance = new Chart(barCtx, {
+                type: 'bar',
+                data: {
+                    labels: labels.length > 0 ? labels : ['لا توجد بيانات'],
+                    datasets: [
+                        { label: 'المستهدف', data: targetedData.length > 0 ? targetedData : [0], backgroundColor: '#3b82f6', borderRadius: 8 },
+                        { label: 'المزالة', data: removedData.length > 0 ? removedData : [0], backgroundColor: '#10b981', borderRadius: 8 },
+                        { label: 'المتبقية', data: remainingData.length > 0 ? remainingData : [0], backgroundColor: '#f59e0b', borderRadius: 8 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { font: { family: 'Cairo', weight: 'bold' } } } },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { font: { family: 'Cairo' } } },
+                        y: { grid: { color: '#f1f5f9' }, ticks: { font: { family: 'Cairo' } } }
+                    }
+                }
+            });
+
+            // Doughnut Chart
+            let totalT = targetedData.reduce((a, b) => a + b, 0);
+            let totalR = removedData.reduce((a, b) => a + b, 0);
+            let totalRem = remainingData.reduce((a, b) => a + b, 0);
+
+            const doughCtx = document.getElementById('doughnutChart').getContext('2d');
+            if (doughnutChartInstance) doughnutChartInstance.destroy();
+
+            doughnutChartInstance = new Chart(doughCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['المزالة', 'المتبقية'],
+                    datasets: [{
+                        data: totalT > 0 ? [totalR, totalRem] : [1, 1],
+                        backgroundColor: ['#10b981', '#f59e0b'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { font: { family: 'Cairo', weight: 'bold' } } } },
+                    cutout: '75%'
+                }
+            });
+        }
+
+        // Record Modal & CRUD
+        window.openRecordModal = function(id = null, adminName = '', govName = '', targeted = '', removed = '') {
+            document.getElementById('recordId').value = id || '';
+            document.getElementById('adminNameInput').value = adminName;
+            document.getElementById('govNameInput').value = govName;
+            document.getElementById('targetedInput').value = targeted;
+            document.getElementById('removedInput').value = removed;
+            calcRemaining();
+            document.getElementById('recordModalTitle').innerText = id ? 'تعديل بيان إزالة' : 'إضافة بيان إزالة جديد';
+            document.getElementById('recordModal').classList.remove('hidden');
+        }
+
+        window.closeRecordModal = function() {
+            document.getElementById('recordModal').classList.add('hidden');
+        }
+
+        window.calcRemaining = function() {
+            const targeted = Number(document.getElementById('targetedInput').value) || 0;
+            const removed = Number(document.getElementById('removedInput').value) || 0;
+            const remaining = Math.max(0, targeted - removed);
+            document.getElementById('remainingInput').value = remaining;
+        }
+
+        window.saveRecord = async function(event) {
+            event.preventDefault();
+            const id = document.getElementById('recordId').value;
+            const adminName = document.getElementById('adminNameInput').value.trim();
+            const govName = document.getElementById('govNameInput').value.trim();
+            const targeted = Number(document.getElementById('targetedInput').value);
+            const removed = Number(document.getElementById('removedInput').value);
+            const remaining = Number(document.getElementById('remainingInput').value);
+
+            const recordData = {
+                adminName,
+                govName,
+                targeted,
+                removed,
+                remaining,
+                userId: currentUser.uid,
+                createdBy: currentUser.email,
+                updatedAt: new Date().toISOString()
+            };
+
+            showLoading("جاري حفظ البيانات...");
+            try {
+                if (id) {
+                    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'records', id), recordData);
+                } else {
+                    const newDocRef = doc(collection(db, 'artifacts', appId, 'public', 'data', 'records'));
+                    await setDoc(newDocRef, recordData);
+                }
+                closeRecordModal();
+                hideLoading();
+                showAlert("تم الحفظ بنجاح", "تم حفظ بيان الإزالة وتحديث المؤشرات الفورية.");
+            } catch (err) {
+                hideLoading();
+                console.error("Error saving record:", err);
+                showAlert("خطأ", "حدث خطأ أثناء حفظ البيانات.", "error");
+            }
+        }
+
+        window.editRecord = function(id) {
+            const record = allRecords.find(r => r.id === id);
+            if (record) {
+                openRecordModal(record.id, record.adminName, record.govName, record.targeted, record.removed);
+            }
+        }
+
+        window.deleteRecordItem = function(id) {
+            showAlert("تأكيد الحذف", "هل أنت متأكد من حذف هذا البيان نهائياً؟", "error", async () => {
+                showLoading("جاري الحذف...");
+                try {
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'records', id));
+                    hideLoading();
+                    showAlert("تم الحذف", "تم حذف البيان بنجاح.");
+                } catch (err) {
+                    hideLoading();
+                    showAlert("خطأ", "حدث خطأ أثناء الحذف.", "error");
+                }
+            });
+        }
+
+        // User Management (Admin)
+        window.openUserModal = function() {
+            document.getElementById('userForm').reset();
+            document.getElementById('userModal').classList.remove('hidden');
+        }
+        window.closeUserModal = function() {
+            document.getElementById('userModal').classList.add('hidden');
+        }
+
+        window.saveNewUser = async function(event) {
+            event.preventDefault();
+            const email = document.getElementById('newUserEmail').value.trim();
+            const password = document.getElementById('newUserPassword').value.trim();
+            const name = document.getElementById('newUserName').value.trim();
+            const role = document.getElementById('newUserRole').value;
+
+            showLoading("جاري إنشاء المستخدم...");
+            try {
+                // We use secondary app or simple profile creation in Firestore
+                // For demonstration, we store profile directly in Firestore
+                const newUserId = 'user_' + Date.now();
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'user_profiles', newUserId), {
+                    email,
+                    name,
+                    role,
+                    tempPassword: password
+                });
+                closeUserModal();
+                hideLoading();
+                showAlert("تم بنجاح", `تم إنشاء حساب المستخدم (${name}) بنجاح.`);
+            } catch (err) {
+                hideLoading();
+                showAlert("خطأ", "حدث خطأ أثناء إنشاء المستخدم.", "error");
+            }
+        }
+
+        function renderUsersTable() {
+            const tbody = document.getElementById('usersTableBody');
+            if (allUsers.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="text-center py-8 text-slate-400">لا يوجد مستخدمون مسجلون</td></tr>`;
+                return;
+            }
+
+            let html = '';
+            allUsers.forEach(u => {
+                const isAdm = u.role === 'admin';
+                html += `
+                    <tr class="hover:bg-slate-50 transition-all border-b border-slate-100">
+                        <td class="py-4 px-6 font-bold text-slate-900">${u.email}</td>
+                        <td class="py-4 px-6 text-slate-700">${u.name || '-'}</td>
+                        <td class="py-4 px-6">
+                            <span class="px-3 py-1 rounded-full text-xs font-bold ${isAdm ? 'bg-indigo-50 text-indigo-600 border border-indigo-200' : 'bg-emerald-50 text-emerald-600 border border-emerald-200'}">
+                                ${isAdm ? 'مسؤول النظام (أدمن)' : 'مستخدم عادي'}
+                            </span>
+                        </td>
+                        <td class="py-4 px-6 text-center">
+                            <button onclick="deleteUserItem('${u.id}')" class="p-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl transition-all" title="حذف المستخدم">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
+
+        window.deleteUserItem = function(id) {
+            showAlert("تأكيد الحذف", "هل أنت متأكد من حذف هذا المستخدم؟", "error", async () => {
+                showLoading("جاري الحذف...");
+                try {
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'user_profiles', id));
+                    hideLoading();
+                    showAlert("تم الحذف", "تم حذف المستخدم بنجاح.");
+                } catch (err) {
+                    hideLoading();
+                    showAlert("خطأ", "حدث خطأ أثناء حذف المستخدم.", "error");
+                }
+            });
+        }
+
+        // Excel Import & Export Functions
+        window.handleExcelImport = function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            showLoading("جاري قراءة ملف Excel...");
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const json = XLSX.utils.sheet_to_json(worksheet);
+
+                    let importedCount = 0;
+                    for (let row of json) {
+                        // Map potential Arabic headers
+                        const adminName = row['اسم الإدارة'] || row['الإدارة'] || row['Administration'] || 'إدارة غير محددة';
+                        const govName = row['اسم المحافظة'] || row['المحافظة'] || row['Governorate'] || 'محافظة غير محددة';
+                        const targeted = Number(row['إجمالي المستهدف من المخالفات'] || row['المستهدف'] || row['Targeted'] || 0);
+                        const removed = Number(row['إجمالي المخالفات المزالة'] || row['المزالة'] || row['Removed'] || 0);
+                        const remaining = Math.max(0, targeted - removed);
+
+                        const recordData = {
+                            adminName,
+                            govName,
+                            targeted,
+                            removed,
+                            remaining,
+                            userId: currentUser.uid,
+                            createdBy: currentUser.email,
+                            updatedAt: new Date().toISOString()
+                        };
+
+                        const newDocRef = doc(collection(db, 'artifacts', appId, 'public', 'data', 'records'));
+                        await setDoc(newDocRef, recordData);
+                        importedCount++;
+                    }
+
+                    hideLoading();
+                    showAlert("تم الاستيراد بنجاح", `تم استيراد ${importedCount} سجل بنجاح إلى قاعدة البيانات وإضافة المؤشرات.`);
+                } catch (err) {
+                    hideLoading();
+                    console.error("Excel import error:", err);
+                    showAlert("خطأ في الملف", "تأكد من أن ملف الاكسيل يتطابق مع التنسيق المطلوب.", "error");
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        window.exportToExcel = function() {
+            let visibleRecords = allRecords;
+            if (userProfile && userProfile.role !== 'admin') {
+                visibleRecords = allRecords.filter(r => r.userId === currentUser.uid || r.createdBy === currentUser.email);
+            }
+
+            if (visibleRecords.length === 0) {
+                showAlert("تنبيه", "لا توجد بيانات لتصديرها.", "info");
+                return;
+            }
+
+            const exportData = visibleRecords.map(r => ({
+                'اسم الإدارة': r.adminName,
+                'اسم المحافظة': r.govName,
+                'إجمالي المستهدف من المخالفات': r.targeted,
+                'إجمالي المخالفات المزالة': r.removed,
+                'إجمالي المخالفات المتبقية': r.remaining,
+                'نسبة الإنجاز %': r.targeted > 0 ? Math.round((r.removed / r.targeted) * 100) + '%' : '0%'
+            }));
+
+            const worksheet = XLSX.utils.json_to_sheet(exportData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "تقرير الإزالات المجمع");
+
+            XLSX.writeFile(workbook, `تقرير_ضبط_النيل_للإزالات_${new Date().toISOString().split('T')[0]}.xlsx`);
+            showAlert("تم التصدير", "تم تصدير شيت Excel المجمع بنجاح.");
+        }
+
+        // Navigation Tabs Switching
+        window.switchTab = function(tabName) {
+            const tabs = ['dashboard', 'records', 'excel', 'users'];
+            tabs.forEach(t => {
+                const content = document.getElementById(`tabContent-${t}`);
+                const btn = document.getElementById(`tabBtn-${t}`);
+                if (content) content.classList.add('hidden');
+                if (btn) {
+                    btn.className = "flex-1 min-w-[140px] py-3 px-4 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 text-slate-600 hover:bg-slate-50";
+                }
+            });
+
+            const activeContent = document.getElementById(`tabContent-${tabName}`);
+            const activeBtn = document.getElementById(`tabBtn-${tabName}`);
+            if (activeContent) activeContent.classList.remove('hidden');
+            if (activeBtn) {
+                activeBtn.className = "flex-1 min-w-[140px] py-3 px-4 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 bg-blue-600 text-white shadow-md";
+            }
+        }
+
+        // Initialize App on load
+        window.onload = function() {
+            initAuth();
+        };
+    </script>
+</body>
+</html>
