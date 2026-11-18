@@ -381,7 +381,7 @@
         let isAuthReady = false;
         let firestoreBlocked = false;
 
-        // Platform Auth Connection (Solves Missing Permissions Error)
+        // Platform Auth Connection
         async function ensureAuth() {
             if (isAuthReady) return;
             try {
@@ -398,7 +398,7 @@
         }
         ensureAuth();
 
-        // --- GLOBAL FUNCTIONS EXPOSURE (CRITICAL FOR INLINE HANDLERS) --- //
+        // --- GLOBAL FUNCTIONS EXPOSURE --- //
         
         window.showAlert = function(title, message, type = 'success', onConfirm = null) {
             const modal = document.getElementById('customModal');
@@ -435,7 +435,7 @@
         
         window.hideLoading = () => document.getElementById('loadingOverlay').classList.add('hidden');
 
-        // Authentication Handlers (App Layer)
+        // Authentication Handlers
         window.handleLogin = async function(event) {
             event.preventDefault();
             const email = document.getElementById('loginEmail').value.trim();
@@ -777,43 +777,77 @@
             });
         };
 
-        // --- SMART EXCEL LOGIC --- //
+        // --- ENHANCED SMART EXCEL IMPORT LOGIC --- //
         
         window.processMultipleExcelFiles = async function(event) {
             const files = event.target.files;
             if (!files.length) return;
             
-            showLoading("قراءة الملفات...");
+            showLoading("قراءة ومعالجة الملفات...");
             tempImportData = [];
             
             for (let file of files) {
-                const data = await file.arrayBuffer();
-                const wb = XLSX.read(data, { type: 'array' });
-                wb.SheetNames.forEach(sheetName => {
-                    const sheet = wb.Sheets[sheetName];
-                    const json = XLSX.utils.sheet_to_json(sheet, { defval: null });
-                    json.forEach(row => {
-                        const getVal = (keys) => { for(let k in row) if(keys.some(p => k.trim().includes(p))) return row[k]; return null; };
+                try {
+                    const data = await file.arrayBuffer();
+                    const wb = XLSX.read(data, { type: 'array' });
+                    
+                    wb.SheetNames.forEach(sheetName => {
+                        const sheet = wb.Sheets[sheetName];
+                        const json = XLSX.utils.sheet_to_json(sheet, { defval: "" });
                         
-                        const adminName = getVal(['اسم الإدارة', 'الإدارة', 'الجهة']);
-                        const govName = getVal(['اسم المحافظة', 'المحافظة']);
-                        let targeted = Number(getVal(['إجمالي المستهدف', 'المستهدف']) || 0);
-                        let removed = Number(getVal(['المزالة', 'عدد الإزالات']) || 0);
-                        let remaining = Number(getVal(['المتبقية']) || Math.max(0, targeted - removed));
+                        json.forEach(row => {
+                            // البحث المرن عن المفاتيح بغض النظر عن المسافات أو التسميات البديلة
+                            const findKey = (possibleNames) => {
+                                for (let key in row) {
+                                    const cleanKey = key.trim().replace(/\s+/g, '');
+                                    for (let name of possibleNames) {
+                                        if (cleanKey.includes(name)) return row[key];
+                                    }
+                                }
+                                return null;
+                            };
 
-                        if (adminName && govName && targeted > 0) {
-                            const isDup = allRecords.some(r => r.adminName === adminName && r.govName === govName && r.targeted == targeted);
-                            tempImportData.push({
-                                id: `tmp_${Math.random().toString(36).substring(2,9)}`,
-                                adminName, govName, targeted, removed, remaining,
-                                sourceFile: file.name, sourceSheet: sheetName, isDuplicate: isDup, selected: !isDup
-                            });
-                        }
+                            const adminName = findKey(['إدارة', 'الجهة', 'القطاع', 'اسم']);
+                            const govName = findKey(['محافظة', 'البلد', 'المنطقة']);
+                            
+                            let targeted = Number(findKey(['المستهدف', 'الهدف', 'الكل'])) || 0;
+                            let removed = Number(findKey(['المزالة', 'الإزالات', 'المنجزة', 'التنفيذ'])) || 0;
+                            let remaining = Number(findKey(['المتبقية', 'الباقي'])) || Math.max(0, targeted - removed);
+
+                            // إذا لم يتم العثور على حقول محددة، نحاول قراءة أول أعمدة نصية ورقمية كبديل ذكي
+                            let finalAdmin = adminName || Object.values(row)[0] || 'إدارة غير محددة';
+                            let finalGov = govName || Object.values(row)[1] || 'محافظة عامة';
+
+                            if (finalAdmin && (targeted > 0 || removed > 0)) {
+                                const isDup = allRecords.some(r => r.adminName === String(finalAdmin) && r.targeted == targeted);
+                                tempImportData.push({
+                                    id: `tmp_${Math.random().toString(36).substring(2,9)}`,
+                                    adminName: String(finalAdmin),
+                                    govName: String(finalGov),
+                                    targeted: targeted,
+                                    removed: removed,
+                                    remaining: remaining > 0 ? remaining : Math.max(0, targeted - removed),
+                                    sourceFile: file.name,
+                                    sourceSheet: sheetName,
+                                    isDuplicate: isDup,
+                                    selected: !isDup
+                                });
+                            }
+                        });
                     });
-                });
+                } catch (err) {
+                    console.error("Error reading file:", file.name, err);
+                }
             }
-            renderPreviewTable();
+
             hideLoading();
+            if (tempImportData.length === 0) {
+                showAlert("تنبيه", "لم يتم العثور على بيانات مطابقة في الملفات المرفوعة. تأكد من أن الأعمدة تحتوي على بيانات المستهدف والمزالة.", "error");
+                document.getElementById('excelFileInput').value = '';
+                return;
+            }
+
+            renderPreviewTable();
         };
 
         function renderPreviewTable() {
