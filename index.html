@@ -99,11 +99,11 @@
 
                 <button type="submit" class="w-full py-3.5 nile-gradient text-white rounded-xl font-bold text-sm shadow-lg hover:opacity-95 transition-all flex items-center justify-center gap-2">
                     <i class="fa-solid fa-right-to-bracket"></i> تسجيل الدخول للنظام
-                </button>
-            </form>
-
-            <div class="mt-6 text-center border-t border-slate-100 pt-4">
-                <p class="text-xs text-slate-400">بواسطة قطاع تطوير وحماية نهر النيل - وزارة الموارد المائية والري</p>
+            <div class="mt-6 text-center border-t border-slate-100 pt-4 space-y-1.5">
+                <p class="text-xs font-bold text-cyan-800 bg-cyan-50 py-1.5 px-3 rounded-lg border border-cyan-100">
+                    <i class="fa-solid fa-shield-halved ml-1"></i> بريد الأدمن الرئيسي للنظام: <span dir="ltr" class="font-mono select-all">admin@nile.gov.eg</span>
+                </p>
+                <p class="text-[11px] text-slate-400">بواسطة قطاع تطوير وحماية نهر النيل - وزارة الموارد المائية والري</p>
             </div>
         </div>
     </div>
@@ -231,11 +231,16 @@
                 <div class="bg-white p-6 rounded-3xl card-shadow border border-slate-100 flex flex-col md:flex-row items-center justify-between gap-4">
                     <div>
                         <h3 class="text-lg font-black text-slate-900">سجل بيانات الإزالات اليومية</h3>
-                        <p class="text-xs text-slate-500 mt-0.5">إضافة، تعديل، وحفظ البيانات الخاصة بالإدارات والمحافظات</p>
+                        <p class="text-xs text-slate-500 mt-0.5">إضافة، تعديل، وحفظ البيانات الخاصة بالإدارات والمحافظات على السحابة</p>
                     </div>
-                    <button onclick="openRecordModal()" class="px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-md transition-all flex items-center gap-2">
-                        <i class="fa-solid fa-plus"></i> إضافة بيان جديد
-                    </button>
+                    <div class="flex flex-wrap items-center gap-3">
+                        <button onclick="syncAllRecordsToFirebase()" class="px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm shadow-md transition-all flex items-center gap-2">
+                            <i class="fa-solid fa-cloud-arrow-up"></i> حفظ البيانات على Firebase
+                        </button>
+                        <button onclick="openRecordModal()" class="px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-md transition-all flex items-center gap-2">
+                            <i class="fa-solid fa-plus"></i> إضافة بيان جديد
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Search and Filter Bar -->
@@ -281,14 +286,14 @@
                             <div class="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center text-3xl mb-4">
                                 <i class="fa-solid fa-file-excel"></i>
                             </div>
-                            <h3 class="text-lg font-black text-slate-900 mb-2">استيراد من ملف Excel</h3>
-                            <p class="text-slate-500 text-sm mb-6">قم برفع شيت الاكسيل الخاص بك (يجب أن يحتوي على الأعمدة: اسم الإدارة، اسم المحافظة، إجمالي المستهدف، إجمالي المخالفات المزالة، إجمالي المخالفات المتبقية).</p>
+                            <h3 class="text-lg font-black text-slate-900 mb-2">استيراد ودمج عدة ملفات Excel</h3>
+                            <p class="text-slate-500 text-sm mb-6">يمكنك تحديد ملف واحد أو عدة ملفات Excel معاً (.xlsx, .xls, .csv) وسيتم دمجها تلقائياً وحساب المتبقي ونسب الإنجاز وحفظها في حسابك.</p>
                             
                             <label class="border-2 border-dashed border-emerald-300 bg-emerald-50/50 hover:bg-emerald-50 rounded-2xl p-6 flex flex-col items-center justify-center cursor-pointer transition-all">
                                 <i class="fa-solid fa-cloud-arrow-up text-3xl text-emerald-600 mb-2"></i>
-                                <span class="text-sm font-bold text-slate-700">اختر ملف Excel أو اسحبه هنا</span>
-                                <span class="text-xs text-slate-400 mt-1">(.xlsx, .xls)</span>
-                                <input type="file" id="excelFileInput" accept=".xlsx, .xls" class="hidden" onchange="handleExcelImport(event)">
+                                <span class="text-sm font-bold text-slate-700">اختر ملف أو عدة ملفات Excel لدمجها</span>
+                                <span class="text-xs text-slate-400 mt-1">(.xlsx, .xls, .csv - يدعم التحديد المتعدد)</span>
+                                <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" multiple class="hidden" onchange="handleExcelImport(event)">
                             </label>
                         </div>
                     </div>
@@ -300,7 +305,7 @@
                                 <i class="fa-solid fa-file-arrow-down"></i>
                             </div>
                             <h3 class="text-lg font-black text-slate-900 mb-2">تصدير شيت Excel مجمع</h3>
-                            <p class="text-slate-500 text-sm mb-6">تصدير تقرير شامل ومحدث بكل البيانات المدخلة في النظام إلى ملف Excel منسق واحترافي.</p>
+                            <p class="text-slate-500 text-sm mb-6">تصدير تقرير شامل ومحدث بكل البيانات المدخلة في النظام إلى ملف Excel منسق واحترافي يتضمن صفحة البيانات التفصيلية وصفحة ملخص المؤشرات والانفوجرافيك الرقمي.</p>
                         </div>
                         <button onclick="exportToExcel()" class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-sm shadow-lg transition-all flex items-center justify-center gap-2">
                             <i class="fa-solid fa-download"></i> تصدير البيانات المجمعة الآن
@@ -313,12 +318,19 @@
             <div id="tabContent-users" class="space-y-6 hidden">
                 <div class="bg-white p-6 rounded-3xl card-shadow border border-slate-100 flex flex-col md:flex-row items-center justify-between gap-4">
                     <div>
-                        <h3 class="text-lg font-black text-slate-900">إدارة مستخدمي المنظومة</h3>
-                        <p class="text-xs text-slate-500 mt-0.5">صلاحيات الأدمن: إنشاء مستخدمين جدد، منح بيانات الدخول، وإدارة الحسابات</p>
+                        <h3 class="text-lg font-black text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-user-shield text-indigo-600"></i> إدارة مستخدمي المنظومة والصلاحيات (Security)
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-0.5">إنشاء حسابات حقيقية في Firebase Authentication وتحديد صلاحيات الأدمن والمستخدمين</p>
                     </div>
-                    <button onclick="openUserModal()" class="px-5 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-md transition-all flex items-center gap-2">
-                        <i class="fa-solid fa-user-plus"></i> إضافة مستخدم جديد
-                    </button>
+                    <div class="flex flex-wrap items-center gap-3">
+                        <button onclick="openSecurityRulesModal()" class="px-4 py-3 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-bold text-xs shadow-md transition-all flex items-center gap-2">
+                            <i class="fa-solid fa-code"></i> قواعد أمان Firestore Rules
+                        </button>
+                        <button onclick="openUserModal()" class="px-5 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-md transition-all flex items-center gap-2">
+                            <i class="fa-solid fa-user-plus"></i> إضافة مستخدم / أدمن جديد
+                        </button>
+                    </div>
                 </div>
 
                 <div class="bg-white rounded-3xl card-shadow border border-slate-100 overflow-hidden">
@@ -326,10 +338,11 @@
                         <table class="w-full text-right border-collapse">
                             <thead>
                                 <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs font-black uppercase tracking-wider">
-                                    <th class="py-4 px-6">البريد الإلكتروني</th>
-                                    <th class="py-4 px-6">اسم الإدارة / المسؤول</th>
-                                    <th class="py-4 px-6">الصلاحية</th>
-                                    <th class="py-4 px-6 text-center">الإجراءات</th>
+                                    <th class="py-4 px-6">الاسم بالكامل / الإدارة</th>
+                                    <th class="py-4 px-6">البريد الإلكتروني (Firebase Auth)</th>
+                                    <th class="py-4 px-6">نوع الصلاحية</th>
+                                    <th class="py-4 px-6">تاريخ الإنشاء</th>
+                                    <th class="py-4 px-6 text-center">التحكم بالصلاحيات</th>
                                 </tr>
                             </thead>
                             <tbody id="usersTableBody" class="divide-y divide-slate-100 text-sm font-medium text-slate-700">
@@ -390,41 +403,106 @@
     <!-- User Add Modal (Admin Only) -->
     <div id="userModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm hidden">
         <div class="bg-white rounded-3xl p-8 max-w-lg w-full mx-4 card-shadow border border-slate-100">
-            <h3 class="text-xl font-black text-slate-900 mb-6">إضافة مستخدم جديد للنظام</h3>
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-user-shield"></i>
+                </div>
+                <div>
+                    <h3 class="text-xl font-black text-slate-900">إضافة مستخدم جديد في Firebase</h3>
+                    <p class="text-xs text-slate-500">يتم التسجيل مباشرة في قسم Authentication & Firestore دون خروجك</p>
+                </div>
+            </div>
             <form id="userForm" onsubmit="saveNewUser(event)" class="space-y-4">
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1.5 uppercase">البريد الإلكتروني</label>
-                    <input type="email" id="newUserEmail" required placeholder="user@nile.gov.eg" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5 uppercase">الاسم بالكامل / اسم الإدارة</label>
+                    <input type="text" id="newUserName" required placeholder="مثال: م. أحمد محمود - إدارة نيل أسيوط" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1.5 uppercase">كلمة المرور المؤقتة</label>
-                    <input type="password" id="newUserPassword" required placeholder="••••••••" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5 uppercase">البريد الإلكتروني (Email)</label>
+                    <input type="email" id="newUserEmail" required placeholder="user@nile.gov.eg" dir="ltr" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-left focus:outline-none focus:ring-2 focus:ring-indigo-500">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1.5 uppercase">اسم الإدارة / المسؤول</label>
-                    <input type="text" id="newUserName" required placeholder="مثال: إدارة حماية نيل أسيوط" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5 uppercase">كلمة المرور (6 أحرف على الأقل)</label>
+                    <input type="password" id="newUserPassword" required minlength="6" placeholder="••••••••" dir="ltr" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-left focus:outline-none focus:ring-2 focus:ring-indigo-500">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1.5 uppercase">الصلاحية</label>
-                    <select id="newUserRole" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        <option value="user">مستخدم عادي</option>
-                        <option value="admin">مسؤول النظام (أدمن)</option>
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5 uppercase">نوع الحساب / الصلاحية</label>
+                    <select id="newUserRole" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="user">مستخدم عادي (يرى ويدير بياناته الخاصة فقط)</option>
+                        <option value="admin">مدير نظام / أدمن (صلاحية كاملة وإضافة مستخدمين)</option>
                     </select>
                 </div>
 
-                <div class="flex justify-end gap-3 mt-8">
+                <div class="flex justify-end gap-3 mt-8 pt-4 border-t border-slate-100">
                     <button type="button" onclick="closeUserModal()" class="px-5 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-sm transition-all">إلغاء</button>
-                    <button type="submit" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-md transition-all">إنشاء الحساب</button>
+                    <button type="submit" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-md transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-cloud-arrow-up"></i> إضافة وحفظ في Firebase
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 
+    <!-- Firestore Security Rules Modal -->
+    <div id="securityRulesModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm hidden">
+        <div class="bg-white rounded-3xl p-8 max-w-2xl w-full mx-4 card-shadow border border-slate-100">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-slate-900 text-amber-400 rounded-xl flex items-center justify-center text-lg">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-black text-slate-900">قواعد أمان Firestore (Security Rules)</h3>
+                        <p class="text-xs text-slate-500">انسخ الكود وضعه في تبويب Rules داخل Firestore في لوحة تحكم Firebase</p>
+                    </div>
+                </div>
+                <button onclick="closeSecurityRulesModal()" class="text-slate-400 hover:text-slate-600 text-xl"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div class="relative">
+                <textarea id="firestoreRulesCode" readonly dir="ltr" rows="13" class="w-full p-4 bg-slate-900 text-emerald-400 font-mono text-xs rounded-2xl border border-slate-700 focus:outline-none leading-relaxed">rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isMasterAdmin() {
+      return request.auth != null && request.auth.token.email == 'admin@nile.gov.eg';
+    }
+    function isAdmin() {
+      return isMasterAdmin() || (request.auth != null && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+    }
+    match /users/{userId} {
+      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
+      allow write: if isAdmin();
+    }
+    match /records/{recordId} {
+      allow read: if request.auth != null && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if request.auth != null && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+  }
+}</textarea>
+            </div>
+
+            <div class="flex justify-end gap-3 mt-6">
+                <button onclick="copySecurityRules()" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm transition-all flex items-center gap-2 shadow-md">
+                    <i class="fa-solid fa-copy"></i> نسخ القواعد
+                </button>
+                <button onclick="closeSecurityRulesModal()" class="px-5 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl font-bold text-sm transition-all">إغلاق</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Firebase SDKs & App Logic -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, getDoc, updateDoc, deleteDoc, onSnapshot, query, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // =========================================================================
+        // إعدادات الأدمن الرئيسي الحصري (يمكنك تغيير البريد الإلكتروني من هنا بسهولة)
+        // =========================================================================
+        const MASTER_ADMIN_EMAIL = "admin@nile.gov.eg";
 
         // Global Firebase Configuration
         const firebaseConfig = {
@@ -441,8 +519,6 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'nile-removal-project-default';
-
         // App State
         let currentUser = null;
         let userProfile = null;
@@ -450,19 +526,27 @@
         let allUsers = [];
         let barChartInstance = null;
         let doughnutChartInstance = null;
+        let unsubscribeRecords = null;
+        let unsubscribeUsers = null;
 
         // DOM Elements
         const authView = document.getElementById('authView');
         const appView = document.getElementById('appView');
         const loadingOverlay = document.getElementById('loadingOverlay');
 
-        // Show/Hide Loading
         function showLoading(text = "جاري المعالجة...") {
             document.getElementById('loadingText').innerText = text;
             loadingOverlay.classList.remove('hidden');
         }
         function hideLoading() {
             loadingOverlay.classList.add('hidden');
+        }
+
+        // Helper to check if current logged in user is Admin
+        function isCurrentUserAdmin() {
+            if (!currentUser) return false;
+            if (currentUser.email && currentUser.email.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase()) return true;
+            return userProfile && userProfile.role === 'admin';
         }
 
         // Custom Modal helper
@@ -504,15 +588,14 @@
 
         // Authentication State Listener
         async function initAuth() {
-            showLoading("جاري الاتصال بالنظام...");
+            showLoading("جاري التحقق من الهوية والصلاحيات...");
             
-            // Initial token check
             try {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     await signInWithCustomToken(auth, __initial_auth_token);
                 }
             } catch (e) {
-                console.log("Custom token sign in failed, falling back", e);
+                console.log("Custom token skipped", e);
             }
 
             onAuthStateChanged(auth, async (user) => {
@@ -521,10 +604,15 @@
                     await fetchUserProfile(user.uid, user.email);
                     authView.classList.add('hidden');
                     appView.classList.remove('hidden');
+                    switchTab('dashboard');
                     initListeners();
                 } else {
+                    if (unsubscribeRecords) unsubscribeRecords();
+                    if (unsubscribeUsers) unsubscribeUsers();
                     currentUser = null;
                     userProfile = null;
+                    allRecords = [];
+                    allUsers = [];
                     appView.classList.add('hidden');
                     authView.classList.remove('hidden');
                 }
@@ -532,72 +620,93 @@
             });
         }
 
-        // Fetch User Profile from Firestore
+        // Fetch or Initialize User Profile in Firestore `users/{uid}`
         async function fetchUserProfile(uid, email) {
+            const normalizedEmail = (email || "").toLowerCase();
+            const isMaster = normalizedEmail === MASTER_ADMIN_EMAIL.toLowerCase();
+
             try {
-                const userDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'user_profiles', uid);
+                const userDocRef = doc(db, 'users', uid);
                 const userSnap = await getDoc(userDocRef);
                 
                 if (userSnap.exists()) {
                     userProfile = userSnap.data();
+                    // Ensure Master Admin always holds 'admin' role in Firestore
+                    if (isMaster && userProfile.role !== 'admin') {
+                        userProfile.role = 'admin';
+                        await updateDoc(userDocRef, { role: 'admin' });
+                    }
                 } else {
-                    // Default fallback for first login
-                    const isAdmin = email.includes('admin') || email === 'admin@nile.gov.eg';
                     userProfile = {
+                        uid: uid,
                         email: email,
-                        name: email.split('@')[0],
-                        role: isAdmin ? 'admin' : 'user'
+                        name: isMaster ? 'الأدمن الرئيسي - مشروع ضبط النيل' : email.split('@')[0],
+                        role: isMaster ? 'admin' : 'user',
+                        createdBy: isMaster ? 'System' : 'Self/Admin',
+                        createdAt: new Date().toISOString()
                     };
                     await setDoc(userDocRef, userProfile);
                 }
-
-                updateUIUserHeader();
             } catch (err) {
                 console.error("Error fetching user profile:", err);
-                userProfile = { email: email, name: email, role: 'user' };
-                updateUIUserHeader();
+                userProfile = {
+                    uid: uid,
+                    email: email,
+                    name: isMaster ? 'الأدمن الرئيسي' : email.split('@')[0],
+                    role: isMaster ? 'admin' : 'user'
+                };
             }
+            updateUIUserHeader();
         }
 
         function updateUIUserHeader() {
+            const isAdm = isCurrentUserAdmin();
+            const isMaster = currentUser.email && currentUser.email.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase();
+
             document.getElementById('userNameDisplay').innerText = userProfile.name || currentUser.email;
             const badge = document.getElementById('userRoleBadge');
             const usersTabBtn = document.getElementById('tabBtn-users');
 
-            if (userProfile.role === 'admin') {
-                badge.innerText = "مسؤول النظام (أدمن)";
-                badge.className = "text-xs px-2.5 py-1 rounded-full font-bold bg-indigo-50 text-indigo-600 border border-indigo-200 mt-0.5 w-fit";
+            if (isAdm) {
+                badge.innerText = isMaster ? "الأدمن الرئيسي (Super Admin)" : "مدير نظام (أدمن)";
+                badge.className = "text-xs px-2.5 py-1 rounded-full font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 mt-0.5 w-fit";
                 usersTabBtn.classList.remove('hidden');
             } else {
-                badge.innerText = "مستخدم عادي";
-                badge.className = "text-xs px-2.5 py-1 rounded-full font-bold bg-emerald-50 text-emerald-600 border border-emerald-200 mt-0.5 w-fit";
+                badge.innerText = "مستخدم عادي (بياناتي فقط)";
+                badge.className = "text-xs px-2.5 py-1 rounded-full font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 mt-0.5 w-fit";
                 usersTabBtn.classList.add('hidden');
             }
         }
 
-        // Login Handler
+        // Login Handler (Only Master Admin auto-registers on first use; regular users must be created by Admin)
         window.handleLogin = async function(event) {
             event.preventDefault();
             const email = document.getElementById('loginEmail').value.trim();
             const password = document.getElementById('loginPassword').value.trim();
 
-            showLoading("جاري تسجيل الدخول...");
+            showLoading("جاري التحقق من بيانات الدخول...");
             try {
                 await signInWithEmailAndPassword(auth, email, password);
             } catch (error) {
-                console.error("Login error:", error);
-                // If account doesn't exist and it's demo or first time, create it automatically for convenience
-                try {
-                    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                    const isAdmin = email.includes('admin');
-                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'user_profiles', userCredential.user.uid), {
-                        email: email,
-                        name: email.split('@')[0],
-                        role: isAdmin ? 'admin' : 'user'
-                    });
-                } catch (createErr) {
+                // Allow initial creation ONLY for MASTER_ADMIN_EMAIL if not yet created in Firebase Auth
+                if (email.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase() && (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential')) {
+                    try {
+                        const cred = await createUserWithEmailAndPassword(auth, email, password);
+                        await setDoc(doc(db, 'users', cred.user.uid), {
+                            uid: cred.user.uid,
+                            email: email,
+                            name: 'الأدمن الرئيسي - مشروع ضبط النيل',
+                            role: 'admin',
+                            createdBy: 'System',
+                            createdAt: new Date().toISOString()
+                        });
+                    } catch (createErr) {
+                        hideLoading();
+                        showAlert("خطأ في الدخول", "كلمة المرور غير صحيحة أو يجب أن تكون 6 أحرف على الأقل.", "error");
+                    }
+                } else {
                     hideLoading();
-                    showAlert("خطأ في تسجيل الدخول", "تأكد من صحة البريد الإلكتروني وكلمة المرور.", "error");
+                    showAlert("تعذر تسجيل الدخول", "البريد الإلكتروني غير مسجل أو كلمة المرور غير صحيحة. يرجى مراجعة الأدمن لإنشاء حساب لك.", "error");
                 }
             }
         }
@@ -608,44 +717,51 @@
             hideLoading();
         }
 
-        // Firestore Listeners
+        // Firestore Real-time Listeners with Role-based Isolation
         function initListeners() {
-            // Fetch Records
-            const recordsQuery = collection(db, 'artifacts', appId, 'public', 'data', 'records');
-            onSnapshot(recordsQuery, (snapshot) => {
+            if (unsubscribeRecords) unsubscribeRecords();
+            if (unsubscribeUsers) unsubscribeUsers();
+
+            const isAdm = isCurrentUserAdmin();
+            const recordsRef = collection(db, 'records');
+            
+            // Admin sees ALL records; Regular user queries ONLY their own records
+            const recordsQuery = isAdm 
+                ? recordsRef 
+                : query(recordsRef, where("userId", "==", currentUser.uid));
+
+            unsubscribeRecords = onSnapshot(recordsQuery, (snapshot) => {
                 allRecords = [];
                 snapshot.forEach((docSnap) => {
                     allRecords.push({ id: docSnap.id, ...docSnap.data() });
                 });
                 renderDashboardAndTable();
             }, (error) => {
-                console.error("Records snapshot error:", error);
+                console.error("Records listener error:", error);
             });
 
-            // Fetch Users (for admin)
-            if (userProfile && userProfile.role === 'admin') {
-                const usersQuery = collection(db, 'artifacts', appId, 'public', 'data', 'user_profiles');
-                onSnapshot(usersQuery, (snapshot) => {
+            // Admin Users Listener
+            if (isAdm) {
+                const usersRef = collection(db, 'users');
+                unsubscribeUsers = onSnapshot(usersRef, (snapshot) => {
                     allUsers = [];
                     snapshot.forEach((docSnap) => {
                         allUsers.push({ id: docSnap.id, ...docSnap.data() });
                     });
                     renderUsersTable();
                 }, (error) => {
-                    console.error("Users snapshot error:", error);
+                    console.error("Users listener error:", error);
                 });
             }
         }
 
         // Render Dashboard KPIs & Tables
         function renderDashboardAndTable() {
-            // Filter records based on role (Regular users see only their own records, admin sees all)
-            let visibleRecords = allRecords;
-            if (userProfile && userProfile.role !== 'admin') {
-                visibleRecords = allRecords.filter(r => r.userId === currentUser.uid || r.createdBy === currentUser.email);
-            }
+            const isAdm = isCurrentUserAdmin();
+            const visibleRecords = isAdm 
+                ? allRecords 
+                : allRecords.filter(r => r.userId === currentUser.uid);
 
-            // Calculate KPIs
             let totalTargeted = 0;
             let totalRemoved = 0;
             let totalRemaining = 0;
@@ -670,7 +786,7 @@
         // Render Records Table
         function renderTable(records) {
             const tbody = document.getElementById('recordsTableBody');
-            document.getElementById('recordCountIndicator').innerText = `إجمالي السجلات: ${records.length}`;
+            document.getElementById('recordCountIndicator').innerText = `إجمالي السجلات المعروضة: ${records.length}`;
 
             if (records.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="7" class="text-center py-8 text-slate-400">لا توجد بيانات مسجلة حتى الآن</td></tr>`;
@@ -682,14 +798,17 @@
                 const pct = r.targeted > 0 ? Math.round((r.removed / r.targeted) * 100) : 0;
                 html += `
                     <tr class="hover:bg-slate-50/80 transition-all border-b border-slate-100">
-                        <td class="py-4 px-6 font-bold text-slate-900">${r.adminName}</td>
+                        <td class="py-4 px-6 font-bold text-slate-900">
+                            ${r.adminName}
+                            ${isCurrentUserAdmin() && r.userEmail ? `<div class="text-[11px] font-normal text-slate-400 mt-0.5"><i class="fa-solid fa-user ml-1"></i>${r.userEmail}</div>` : ''}
+                        </td>
                         <td class="py-4 px-6 text-slate-600">${r.govName}</td>
                         <td class="py-4 px-6 font-semibold">${Number(r.targeted).toLocaleString()}</td>
                         <td class="py-4 px-6 font-semibold text-emerald-600">${Number(r.removed).toLocaleString()}</td>
                         <td class="py-4 px-6 font-semibold text-amber-600">${Number(r.remaining).toLocaleString()}</td>
                         <td class="py-4 px-6">
                             <div class="flex items-center gap-2">
-                                <div class="w-full bg-slate-200 rounded-full h-2 w-24 overflow-hidden">
+                                <div class="w-24 bg-slate-200 rounded-full h-2 overflow-hidden">
                                     <div class="bg-blue-600 h-2 rounded-full" style="width: ${Math.min(pct, 100)}%"></div>
                                 </div>
                                 <span class="text-xs font-bold text-slate-700">${pct}%</span>
@@ -713,21 +832,22 @@
 
         // Search Filter
         window.filterRecords = function() {
-            const query = document.getElementById('searchInput').value.toLowerCase();
-            let visibleRecords = allRecords;
-            if (userProfile && userProfile.role !== 'admin') {
-                visibleRecords = allRecords.filter(r => r.userId === currentUser.uid || r.createdBy === currentUser.email);
-            }
+            const queryText = document.getElementById('searchInput').value.toLowerCase();
+            const isAdm = isCurrentUserAdmin();
+            const visibleRecords = isAdm 
+                ? allRecords 
+                : allRecords.filter(r => r.userId === currentUser.uid);
 
             const filtered = visibleRecords.filter(r => 
-                r.adminName.toLowerCase().includes(query) || r.govName.toLowerCase().includes(query)
+                (r.adminName || '').toLowerCase().includes(queryText) || 
+                (r.govName || '').toLowerCase().includes(queryText) ||
+                (r.userEmail || '').toLowerCase().includes(queryText)
             );
             renderTable(filtered);
         }
 
         // Charts Update
         function updateCharts(records) {
-            // Aggregate by Governorate
             const govMap = {};
             records.forEach(r => {
                 if (!govMap[r.govName]) {
@@ -743,7 +863,6 @@
             const removedData = labels.map(l => govMap[l].removed);
             const remainingData = labels.map(l => govMap[l].remaining);
 
-            // Bar Chart
             const barCtx = document.getElementById('barChart').getContext('2d');
             if (barChartInstance) barChartInstance.destroy();
 
@@ -768,7 +887,6 @@
                 }
             });
 
-            // Doughnut Chart
             let totalT = targetedData.reduce((a, b) => a + b, 0);
             let totalR = removedData.reduce((a, b) => a + b, 0);
             let totalRem = remainingData.reduce((a, b) => a + b, 0);
@@ -834,25 +952,55 @@
                 removed,
                 remaining,
                 userId: currentUser.uid,
-                createdBy: currentUser.email,
+                userEmail: currentUser.email,
                 updatedAt: new Date().toISOString()
             };
 
-            showLoading("جاري حفظ البيانات...");
+            showLoading("جاري حفظ البيانات على Firebase...");
             try {
                 if (id) {
-                    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'records', id), recordData);
+                    const existing = allRecords.find(r => r.id === id);
+                    if (existing) {
+                        recordData.userId = existing.userId;
+                        recordData.userEmail = existing.userEmail;
+                    }
+                    await updateDoc(doc(db, 'records', id), recordData);
                 } else {
-                    const newDocRef = doc(collection(db, 'artifacts', appId, 'public', 'data', 'records'));
+                    const newDocRef = doc(collection(db, 'records'));
                     await setDoc(newDocRef, recordData);
                 }
                 closeRecordModal();
                 hideLoading();
-                showAlert("تم الحفظ بنجاح", "تم حفظ بيان الإزالة وتحديث المؤشرات الفورية.");
+                showAlert("تم الحفظ بنجاح", "تم حفظ بيان الإزالة في قاعدة بيانات Firebase وتحديث المؤشرات.");
             } catch (err) {
                 hideLoading();
                 console.error("Error saving record:", err);
-                showAlert("خطأ", "حدث خطأ أثناء حفظ البيانات.", "error");
+                showAlert("خطأ", "حدث خطأ أثناء حفظ البيانات. تأكد من صلاحيات Firestore.", "error");
+            }
+        }
+
+        window.syncAllRecordsToFirebase = async function() {
+            const isAdm = isCurrentUserAdmin();
+            const visibleRecords = isAdm ? allRecords : allRecords.filter(r => r.userId === currentUser.uid);
+            
+            if (visibleRecords.length === 0) {
+                showAlert("تنبيه", "لا توجد سجلات حالياً لمزامنتها.", "info");
+                return;
+            }
+
+            showLoading("جاري تأكيد ومزامنة جميع البيانات على Firebase...");
+            try {
+                for (const rec of visibleRecords) {
+                    const { id, ...dataToSync } = rec;
+                    dataToSync.lastSyncedAt = new Date().toISOString();
+                    await setDoc(doc(db, 'records', id), dataToSync, { merge: true });
+                }
+                hideLoading();
+                showAlert("تمت المزامنة بنجاح", `تم حفظ وتأكيد عدد (${visibleRecords.length}) سجل على سحابة Firebase بنجاح.`);
+            } catch (err) {
+                hideLoading();
+                console.error("Sync error:", err);
+                showAlert("خطأ في المزامنة", "حدث خطأ أثناء حفظ البيانات على Firebase.", "error");
             }
         }
 
@@ -864,10 +1012,10 @@
         }
 
         window.deleteRecordItem = function(id) {
-            showAlert("تأكيد الحذف", "هل أنت متأكد من حذف هذا البيان نهائياً؟", "error", async () => {
+            showAlert("تأكيد الحذف", "هل أنت متأكد من حذف هذا البيان نهائياً من قاعدة البيانات؟", "error", async () => {
                 showLoading("جاري الحذف...");
                 try {
-                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'records', id));
+                    await deleteDoc(doc(db, 'records', id));
                     hideLoading();
                     showAlert("تم الحذف", "تم حذف البيان بنجاح.");
                 } catch (err) {
@@ -877,8 +1025,14 @@
             });
         }
 
-        // User Management (Admin)
+        // =========================================================================
+        // User Management (Admin Only) using Firebase Secondary App Instance
+        // =========================================================================
         window.openUserModal = function() {
+            if (!isCurrentUserAdmin()) {
+                showAlert("غير مصرح", "هذه الصلاحية متاحة للأدمن فقط.", "error");
+                return;
+            }
             document.getElementById('userForm').reset();
             document.getElementById('userModal').classList.remove('hidden');
         }
@@ -888,54 +1042,108 @@
 
         window.saveNewUser = async function(event) {
             event.preventDefault();
+            if (!isCurrentUserAdmin()) {
+                showAlert("غير مصرح", "ليس لديك صلاحية إضافة مستخدمين.", "error");
+                return;
+            }
+
+            const name = document.getElementById('newUserName').value.trim();
             const email = document.getElementById('newUserEmail').value.trim();
             const password = document.getElementById('newUserPassword').value.trim();
-            const name = document.getElementById('newUserName').value.trim();
             const role = document.getElementById('newUserRole').value;
 
-            showLoading("جاري إنشاء المستخدم...");
+            if (password.length < 6) {
+                showAlert("كلمة مرور قصيرة", "يجب أن تتكون كلمة المرور من 6 أحرف على الأقل.", "error");
+                return;
+            }
+
+            showLoading("جاري إنشاء الحساب في Firebase Security وحفظ الصلاحيات...");
+            let secondaryApp = null;
             try {
-                // We use secondary app or simple profile creation in Firestore
-                // For demonstration, we store profile directly in Firestore
-                const newUserId = 'user_' + Date.now();
-                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'user_profiles', newUserId), {
-                    email,
-                    name,
-                    role,
-                    tempPassword: password
+                // Create a secondary Firebase App instance so the Admin doesn't get signed out
+                secondaryApp = initializeApp(firebaseConfig, "SecondaryUserCreator_" + Date.now());
+                const secondaryAuth = getAuth(secondaryApp);
+
+                // Create actual user in Firebase Authentication (Security -> Users)
+                const userCredential = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+                const newUid = userCredential.user.uid;
+
+                // Save user profile & role in Firestore `users/{uid}`
+                await setDoc(doc(db, 'users', newUid), {
+                    uid: newUid,
+                    name: name,
+                    email: email,
+                    role: role,
+                    createdBy: currentUser.email,
+                    createdAt: new Date().toISOString()
                 });
+
+                // Immediately sign out and destroy the secondary app instance
+                await signOut(secondaryAuth);
+                await deleteApp(secondaryApp);
+                secondaryApp = null;
+
                 closeUserModal();
                 hideLoading();
-                showAlert("تم بنجاح", `تم إنشاء حساب المستخدم (${name}) بنجاح.`);
+                const roleLabel = role === 'admin' ? 'مدير نظام (أدمن)' : 'مستخدم عادي';
+                showAlert("تم إنشاء الحساب بنجاح", `تم تسجيل (${email}) في قسم Authentication بـ Firebase ومنحه صلاحية (${roleLabel}) دون تسجيل خروجك.`);
             } catch (err) {
+                if (secondaryApp) {
+                    try { await deleteApp(secondaryApp); } catch (_) {}
+                }
                 hideLoading();
-                showAlert("خطأ", "حدث خطأ أثناء إنشاء المستخدم.", "error");
+                console.error("Error creating user in Firebase Auth:", err);
+                let msg = "حدث خطأ أثناء إنشاء الحساب في Firebase.";
+                if (err.code === 'auth/email-already-in-use') {
+                    msg = "هذا البريد الإلكتروني مسجل بالفعل في Firebase Authentication.";
+                } else if (err.code === 'auth/invalid-email') {
+                    msg = "صيغة البريد الإلكتروني غير صحيحة.";
+                } else if (err.code === 'auth/weak-password') {
+                    msg = "كلمة المرور ضعيفة جداً، يرجى اختيار كلمة مرور أقوى.";
+                }
+                showAlert("تعذر إنشاء الحساب", msg, "error");
             }
         }
 
         function renderUsersTable() {
             const tbody = document.getElementById('usersTableBody');
             if (allUsers.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="4" class="text-center py-8 text-slate-400">لا يوجد مستخدمون مسجلون</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-slate-400">لا يوجد مستخدمون مسجلون في قاعدة البيانات</td></tr>`;
                 return;
             }
 
             let html = '';
             allUsers.forEach(u => {
-                const isAdm = u.role === 'admin';
+                const isMaster = (u.email || "").toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase();
+                const isAdm = u.role === 'admin' || isMaster;
+                const dateStr = u.createdAt ? new Date(u.createdAt).toLocaleDateString('ar-EG') : '-';
+
                 html += `
                     <tr class="hover:bg-slate-50 transition-all border-b border-slate-100">
-                        <td class="py-4 px-6 font-bold text-slate-900">${u.email}</td>
-                        <td class="py-4 px-6 text-slate-700">${u.name || '-'}</td>
+                        <td class="py-4 px-6 font-bold text-slate-900">
+                            ${u.name || '-'}
+                            ${isMaster ? '<span class="mr-2 text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-extrabold">الأدمن الرئيسي</span>' : ''}
+                        </td>
+                        <td class="py-4 px-6 text-slate-700 font-mono text-xs" dir="ltr">${u.email}</td>
                         <td class="py-4 px-6">
-                            <span class="px-3 py-1 rounded-full text-xs font-bold ${isAdm ? 'bg-indigo-50 text-indigo-600 border border-indigo-200' : 'bg-emerald-50 text-emerald-600 border border-emerald-200'}">
-                                ${isAdm ? 'مسؤول النظام (أدمن)' : 'مستخدم عادي'}
+                            <span class="px-3 py-1 rounded-full text-xs font-bold ${isAdm ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'}">
+                                ${isAdm ? '<i class="fa-solid fa-shield-halved ml-1"></i> مدير نظام (أدمن)' : '<i class="fa-solid fa-user ml-1"></i> مستخدم عادي'}
                             </span>
                         </td>
+                        <td class="py-4 px-6 text-xs text-slate-500">${dateStr}</td>
                         <td class="py-4 px-6 text-center">
-                            <button onclick="deleteUserItem('${u.id}')" class="p-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl transition-all" title="حذف المستخدم">
-                                <i class="fa-solid fa-trash"></i>
-                            </button>
+                            ${isMaster ? `
+                                <span class="text-xs text-slate-400 font-semibold"><i class="fa-solid fa-lock ml-1"></i> محمي</span>
+                            ` : `
+                                <div class="flex items-center justify-center gap-2">
+                                    <button onclick="toggleUserRole('${u.id}', '${isAdm ? 'user' : 'admin'}')" class="px-3 py-1.5 ${isAdm ? 'bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200' : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200'} border rounded-xl text-xs font-bold transition-all" title="${isAdm ? 'تحويل إلى مستخدم عادي' : 'ترقية إلى أدمن'}">
+                                        ${isAdm ? '<i class="fa-solid fa-arrow-down ml-1"></i> خفض لمستخدم' : '<i class="fa-solid fa-arrow-up ml-1"></i> ترقية لأدمن'}
+                                    </button>
+                                    <button onclick="deleteUserItem('${u.id}', '${u.email}')" class="p-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl transition-all" title="إزالة الصلاحية من النظام">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </div>
+                            `}
                         </td>
                     </tr>
                 `;
@@ -943,101 +1151,178 @@
             tbody.innerHTML = html;
         }
 
-        window.deleteUserItem = function(id) {
-            showAlert("تأكيد الحذف", "هل أنت متأكد من حذف هذا المستخدم؟", "error", async () => {
+        window.toggleUserRole = async function(uid, newRole) {
+            if (!isCurrentUserAdmin()) return;
+            const targetUser = allUsers.find(u => u.id === uid);
+            if (targetUser && (targetUser.email || "").toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase()) {
+                showAlert("غير مسموح", "لا يمكن تعديل صلاحية الأدمن الرئيسي.", "error");
+                return;
+            }
+
+            showLoading("جاري تحديث الصلاحية...");
+            try {
+                await updateDoc(doc(db, 'users', uid), { role: newRole });
+                hideLoading();
+                showAlert("تم التحديث", `تم تغيير صلاحية المستخدم بنجاح إلى (${newRole === 'admin' ? 'مدير نظام / أدمن' : 'مستخدم عادي'}).`);
+            } catch (err) {
+                hideLoading();
+                showAlert("خطأ", "تعذر تحديث الصلاحية.", "error");
+            }
+        }
+
+        window.deleteUserItem = function(uid, email) {
+            if (!isCurrentUserAdmin()) return;
+            if ((email || "").toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase()) {
+                showAlert("غير مسموح", "لا يمكن حذف الأدمن الرئيسي للنظام.", "error");
+                return;
+            }
+
+            showAlert("تأكيد إزالة المستخدم", `هل أنت متأكد من إزالة سجل المستخدم (${email}) من قاعدة الصلاحيات؟`, "error", async () => {
                 showLoading("جاري الحذف...");
                 try {
-                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'user_profiles', id));
+                    await deleteDoc(doc(db, 'users', uid));
                     hideLoading();
-                    showAlert("تم الحذف", "تم حذف المستخدم بنجاح.");
+                    showAlert("تم الحذف", "تم حذف سجل المستخدم وصلاحياته من النظام.");
                 } catch (err) {
                     hideLoading();
-                    showAlert("خطأ", "حدث خطأ أثناء حذف المستخدم.", "error");
+                    showAlert("خطأ", "حدث خطأ أثناء الحذف.", "error");
                 }
             });
         }
 
-        // Excel Import & Export Functions
-        window.handleExcelImport = function(event) {
-            const file = event.target.files[0];
-            if (!file) return;
+        // Security Rules Modal helpers
+        window.openSecurityRulesModal = function() {
+            document.getElementById('securityRulesModal').classList.remove('hidden');
+        }
+        window.closeSecurityRulesModal = function() {
+            document.getElementById('securityRulesModal').classList.add('hidden');
+        }
+        window.copySecurityRules = function() {
+            const textarea = document.getElementById('firestoreRulesCode');
+            textarea.select();
+            document.execCommand('copy');
+            showAlert("تم النسخ", "تم نسخ قواعد أمان Firestore بنجاح. يمكنك لصقها الآن في تبويب Rules في Firebase Console.");
+        }
 
-            showLoading("جاري قراءة ملف Excel...");
-            const reader = new FileReader();
-            reader.onload = async function(e) {
-                try {
-                    const data = new Uint8Array(e.target.result);
+        // Excel Multi-File Import & Formatted Export
+        window.handleExcelImport = async function(event) {
+            const files = event.target.files;
+            if (!files || files.length === 0) return;
+
+            showLoading(`جاري قراءة ودمج ${files.length} ملف Excel...`);
+            let totalImported = 0;
+
+            try {
+                for (let f = 0; f < files.length; f++) {
+                    const file = files[f];
+                    const arrayBuffer = await file.arrayBuffer();
+                    const data = new Uint8Array(arrayBuffer);
                     const workbook = XLSX.read(data, { type: 'array' });
                     const firstSheetName = workbook.SheetNames[0];
                     const worksheet = workbook.Sheets[firstSheetName];
                     const json = XLSX.utils.sheet_to_json(worksheet);
 
-                    let importedCount = 0;
-                    for (let row of json) {
-                        // Map potential Arabic headers
+                    for (const row of json) {
                         const adminName = row['اسم الإدارة'] || row['الإدارة'] || row['Administration'] || 'إدارة غير محددة';
                         const govName = row['اسم المحافظة'] || row['المحافظة'] || row['Governorate'] || 'محافظة غير محددة';
-                        const targeted = Number(row['إجمالي المستهدف من المخالفات'] || row['المستهدف'] || row['Targeted'] || 0);
-                        const removed = Number(row['إجمالي المخالفات المزالة'] || row['المزالة'] || row['Removed'] || 0);
+                        const targeted = Number(row['إجمالي المستهدف من المخالفات'] || row['إجمالى المستهدف من المخالفات'] || row['المستهدف'] || row['Targeted'] || 0);
+                        const removed = Number(row['إجمالي المخالفات المزالة'] || row['إجمالى المخالفات المزالة'] || row['المزالة'] || row['Removed'] || 0);
                         const remaining = Math.max(0, targeted - removed);
 
                         const recordData = {
-                            adminName,
-                            govName,
+                            adminName: String(adminName).trim(),
+                            govName: String(govName).trim(),
                             targeted,
                             removed,
                             remaining,
                             userId: currentUser.uid,
-                            createdBy: currentUser.email,
+                            userEmail: currentUser.email,
                             updatedAt: new Date().toISOString()
                         };
 
-                        const newDocRef = doc(collection(db, 'artifacts', appId, 'public', 'data', 'records'));
+                        const newDocRef = doc(collection(db, 'records'));
                         await setDoc(newDocRef, recordData);
-                        importedCount++;
+                        totalImported++;
                     }
-
-                    hideLoading();
-                    showAlert("تم الاستيراد بنجاح", `تم استيراد ${importedCount} سجل بنجاح إلى قاعدة البيانات وإضافة المؤشرات.`);
-                } catch (err) {
-                    hideLoading();
-                    console.error("Excel import error:", err);
-                    showAlert("خطأ في الملف", "تأكد من أن ملف الاكسيل يتطابق مع التنسيق المطلوب.", "error");
                 }
-            };
-            reader.readAsArrayBuffer(file);
+
+                event.target.value = '';
+                hideLoading();
+                showAlert("تم الدمج والاستيراد بنجاح", `تم استيراد ودمج (${totalImported}) سجل من (${files.length}) ملف وحفظها في قاعدة البيانات.`);
+            } catch (err) {
+                hideLoading();
+                console.error("Excel import error:", err);
+                showAlert("خطأ في الملف", "تأكد من أن ملفات الاكسيل تتطابق مع التنسيق المطلوب.", "error");
+            }
         }
 
         window.exportToExcel = function() {
-            let visibleRecords = allRecords;
-            if (userProfile && userProfile.role !== 'admin') {
-                visibleRecords = allRecords.filter(r => r.userId === currentUser.uid || r.createdBy === currentUser.email);
-            }
+            const isAdm = isCurrentUserAdmin();
+            const visibleRecords = isAdm 
+                ? allRecords 
+                : allRecords.filter(r => r.userId === currentUser.uid);
 
             if (visibleRecords.length === 0) {
                 showAlert("تنبيه", "لا توجد بيانات لتصديرها.", "info");
                 return;
             }
 
-            const exportData = visibleRecords.map(r => ({
-                'اسم الإدارة': r.adminName,
-                'اسم المحافظة': r.govName,
-                'إجمالي المستهدف من المخالفات': r.targeted,
-                'إجمالي المخالفات المزالة': r.removed,
-                'إجمالي المخالفات المتبقية': r.remaining,
-                'نسبة الإنجاز %': r.targeted > 0 ? Math.round((r.removed / r.targeted) * 100) + '%' : '0%'
-            }));
+            let sumTargeted = 0, sumRemoved = 0, sumRemaining = 0;
+            const exportData = visibleRecords.map(r => {
+                const t = Number(r.targeted) || 0;
+                const rem = Number(r.removed) || 0;
+                const left = Number(r.remaining) || 0;
+                sumTargeted += t;
+                sumRemoved += rem;
+                sumRemaining += left;
+                return {
+                    'اسم الإدارة': r.adminName,
+                    'اسم المحافظة': r.govName,
+                    'إجمالي المستهدف من المخالفات': t,
+                    'إجمالي المخالفات المزالة': rem,
+                    'إجمالي المخالفات المتبقية': left,
+                    'نسبة الإنجاز %': t > 0 ? Math.round((rem / t) * 100) + '%' : '0%'
+                };
+            });
 
-            const worksheet = XLSX.utils.json_to_sheet(exportData);
+            // Add Grand Total row
+            exportData.push({
+                'اسم الإدارة': 'الإجمالي العام',
+                'اسم المحافظة': '-',
+                'إجمالي المستهدف من المخالفات': sumTargeted,
+                'إجمالي المخالفات المزالة': sumRemoved,
+                'إجمالي المخالفات المتبقية': sumRemaining,
+                'نسبة الإنجاز %': sumTargeted > 0 ? Math.round((sumRemoved / sumTargeted) * 100) + '%' : '0%'
+            });
+
+            // Summary Infographic Sheet
+            const summaryData = [
+                { 'المؤشر': 'إجمالي المستهدف من المخالفات', 'القيمة': sumTargeted },
+                { 'المؤشر': 'إجمالي المخالفات المزالة', 'القيمة': sumRemoved },
+                { 'المؤشر': 'إجمالي المخالفات المتبقية', 'القيمة': sumRemaining },
+                { 'المؤشر': 'نسبة الإنجاز الإجمالية', 'القيمة': (sumTargeted > 0 ? Math.round((sumRemoved / sumTargeted) * 100) : 0) + '%' },
+                { 'المؤشر': 'تاريخ التصدير', 'القيمة': new Date().toLocaleString('ar-EG') },
+                { 'المؤشر': 'المستخدم المصدر للتقرير', 'القيمة': currentUser.email }
+            ];
+
             const workbook = XLSX.utils.book_new();
+            const worksheet = XLSX.utils.json_to_sheet(exportData);
+            const summarySheet = XLSX.utils.json_to_sheet(summaryData);
+
             XLSX.utils.book_append_sheet(workbook, worksheet, "تقرير الإزالات المجمع");
+            XLSX.utils.book_append_sheet(workbook, summarySheet, "ملخص المؤشرات والانفوجرافيك");
 
             XLSX.writeFile(workbook, `تقرير_ضبط_النيل_للإزالات_${new Date().toISOString().split('T')[0]}.xlsx`);
-            showAlert("تم التصدير", "تم تصدير شيت Excel المجمع بنجاح.");
+            showAlert("تم التصدير", "تم تصدير شيت Excel المجمع بنجاح متضمناً البيانات التفصيلية وملخص المؤشرات.");
         }
 
-        // Navigation Tabs Switching
+        // Navigation Tabs Switching with Guard for Users Tab
         window.switchTab = function(tabName) {
+            if (tabName === 'users' && !isCurrentUserAdmin()) {
+                showAlert("غير مصرح", "عذراً، صفحة إدارة المستخدمين متاحة للأدمن فقط.", "error");
+                return;
+            }
+
             const tabs = ['dashboard', 'records', 'excel', 'users'];
             tabs.forEach(t => {
                 const content = document.getElementById(`tabContent-${t}`);
@@ -1045,6 +1330,9 @@
                 if (content) content.classList.add('hidden');
                 if (btn) {
                     btn.className = "flex-1 min-w-[140px] py-3 px-4 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 text-slate-600 hover:bg-slate-50";
+                    if (t === 'users' && !isCurrentUserAdmin()) {
+                        btn.classList.add('hidden');
+                    }
                 }
             });
 
